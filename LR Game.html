@@ -12,13 +12,11 @@
 		font-size: 20px;
 		position: absolute;
 	}
-	#info {
-		position: absolute;
-		top: 0px; width: 100%;
-		
-		padding: 5px;
-		text-align: center;
-		color: #ffff00
+	#container {
+		width:60vw;
+		height: 60vw;
+		float:left;
+		margin: 3px;
 	}
 	a {color: #00ffff}
 	strong {color:red}
@@ -29,17 +27,22 @@
 
 <h1 style="text-align:center"> Project: LR game </h1>
 <hr>
-<div id="canvas" style="float:left; 
-margin:3px; width:60vw; height:60vw"></div>
+<div id="container">
+       <canvas id="cnvs"> </canvas>
+</div>
 <div style="float:left; margin-left: 10px; width:32vw;">Menu:
-    <button id="turn" style="width:100%">start</button>
+    <button id="turn" style="width:100%">Start</button>
 	<br/>
     <br/>
 	<button id="R-N" style="width:100%">Random</button>
     <br/>
+	<p style="float:left; margin-left: 10px; width:32vw;">
+	Win:  	<input id="W" style="width:20%" type="text" value="None">
+	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
+	Wins:	<input id="WvsL" style="width:20%" type="text" value="None"></p>
+	<br/>
     <br/>
-    <button id="WvsL" style="width:100%">WINS</button>
-    <p id='greeting'></p>
+	<button id="clear" style="width:100%">Reset record</button>
 </div>
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="js/r69/three.min.js"></script>
@@ -49,60 +52,74 @@ margin:3px; width:60vw; height:60vw"></div>
 
 var time = 0;
 var turn = false, change = false;
-var scene, renderer, camera, controls;   
-
-var raycaster;
+var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
-var left_box, right_box;
+var left_ball, right_ball;
 var angle_l = 0, angle_r = 0;
 var ChooseL = false, ChooseR = false, stop = true;
 var InLeft = false, InRight = false;
-var left_count = 0, right_count = 0;
-	
+var Win = 0, Lose = 0;
+var theCanvasFrame;	
 	
 	
 init();
 animate();
 
-/*function clearlog()
+function clearlog()
 {
-	localStorage.setItem ("left_count", 0);
-	localStorage.setItem ("right_count", 0);
-	left_count = right_count = 0;
-}*/
+	localStorage.setItem ("Win", 0);
+	localStorage.setItem ("Lose", 0);
+	Win = Lose = 0;
+}
 
 function log()
 {
-	var left_so_far, right_so_far;
-	var WINS = left_so_far/(left_so_far + right_so_far)*100;
-	left_so_far = localStorage.getItem ("left_count");
-	right_so_far = localStorage.getItem ("right_count");
-	alert ("Win: " + left_so_far + "   vs   Lose: " + right_so_far + "    WINS: " + WINS + "%");
+	var winTemp, loseTemp, WINS;
+	winTemp = localStorage.getItem ("Win");
+	loseTemp = localStorage.getItem ("Lose");
+	var add = winTemp + loseTemp;
+	WINS = winTemp/add;
+	//console.log(winTemp + "   " + add);
+	$("#W").val(winTemp);
+	$("#L").val(loseTemp);
+	$("#WvsL").val(WINS);
+	//alert ("Win: " + winTemp + "   vs   Lose: " + loseTemp + "    WINS: " + WINS*100/1 + "%");
 }
 
 
-function spin (which) 
+/*function spin (which) 
 {
 	if (which == "left") {
 		ChooseL = true;
-		localStorage.setItem ("left_count", ++left_count);
+		localStorage.setItem ("Win", ++Win);
 	}
 	else {
 		ChooseR = true;
-		localStorage.setItem ("right_count", ++right_count);
+		localStorage.setItem ("Lose", ++Lose);
 	}
-}
+}*/
 
 function init() {
-    var ww = $("#canvas").innerWidth();
-    var hh = $("#canvas").innerHeight();	
+    var theCanvas = document.getElementById("cnvs");
+    theCanvasFrame = document.getElementById("container");	
 
-	left_count = localStorage.getItem ("left_count");
-	right_count = localStorage.getItem ("right_count");
-	
+	Win = localStorage.getItem ("Win");
+	Lose = localStorage.getItem ("Lose");
+
+	renderer = new THREE.WebGLRenderer({
+        canvas: theCanvas,
+        antialias: true
+    });
+    var ww = theCanvasFrame.clientWidth;
+    var hh = theCanvasFrame.clientHeight;
+    renderer.setSize(ww, hh);
+    renderer.setClearColor(0x888888);
+	//document.body.appendChild (renderer.domElement);
+
 
     scene = new THREE.Scene();
+	
 
 	camera = new THREE.PerspectiveCamera (45, ww/hh, 1, 10000);
 	camera.position.x = 0;
@@ -111,18 +128,13 @@ function init() {
 	camera.lookAt (new THREE.Vector3(0,0,0));
 
 	
-    renderer = new THREE.WebGLRenderer();
-    renderer.setSize(ww, hh);
-    renderer.setClearColor(0x888888);
-	document.body.appendChild (renderer.domElement);
-	
-
     var gridXZ = new THREE.GridHelper(100, 10);
     gridXZ.setColors(new THREE.Color(0xff0000), new THREE.Color(0xffffff));
     scene.add(gridXZ);
 	
 	light();
 	LR();
+
 	
     controls = new THREE.OrbitControls(camera, renderer.domElement);
 	
@@ -130,8 +142,7 @@ function init() {
 
 	raycaster = new THREE.Raycaster();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
-	
-    $("#canvas").append(renderer.domElement);
+
 }
 
 $("#turn").click(function () {
@@ -153,26 +164,23 @@ $("#R-N").click(function () {
         $("#R-N").html ("Random");
 });
 
-$("#WvsL").click(function () {
-   log();
+$("#clear").click(function () {
+   clearlog();
 });
 
 function LR(){
 	var ball_geom = new THREE.SphereGeometry (20,32,32);
 	var ball_mat = new THREE.MeshLambertMaterial ({color: 0xff2211});
-	left_ball = new THREE.Object3D();
-	left_ball.add( new THREE.Mesh (ball_geom, ball_mat));
+	left_ball = new THREE.Mesh (ball_geom, ball_mat);
 	left_ball.position.set (-50,10,0);
 	left_ball.name = "leftB";
 	scene.add (left_ball);
-		
-
-	right_ball = new THREE.Object3D();
-	right_ball.add( new THREE.Mesh (ball_geom, ball_mat));
+	
+	right_ball = new THREE.Mesh (ball_geom, ball_mat);
 	right_ball.position.set (50,10,0);
 	right_ball.name = "rightB";
 	scene.add (right_ball);
-
+		
 }
 
 function light(){
@@ -186,8 +194,6 @@ function light(){
 }
 
 function onDocumentMouseDown( event ) {
-	var ww = $("#canvas").innerWidth();
-    var hh = $("#canvas").innerHeight();
 	// PICKING DETAILS: 
 	// convert mouse.xy = [-1,1]^2 (NDC)
 	// unproject (mouse.xy, 1) to a point on the far plane (in world coordinate)
@@ -196,16 +202,15 @@ function onDocumentMouseDown( event ) {
 	// each record as
 	// [ { distance, point, face, faceIndex, object }, ... ]
 	event.preventDefault();
-	mouse.x = ( event.clientX / ww ) * 2 - 1;
-	mouse.y = - ( event.clientY / hh ) * 2 + 1;
-	console.log(mouse.x);
+	mouse.x = ( (event.clientX - event.target.offsetLeft) / theCanvasFrame.clientWidth ) * 2 - 1;
+	mouse.y = - ( (event.clientY - event.target.offsetTop) / theCanvasFrame.clientHeight ) * 2 + 1;
 	// find intersections
 	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 	var intersects = raycaster.intersectObjects( scene.children );
 	if ( intersects.length > 0 ) {
-		if (intersects[0].object.name === "leftB") spin ("left");
-		else if (intersects[0].object.name === "rightB") spin ("right");
+		if (intersects[0].object.name === "leftB") ChooseL = true;
+		else if (intersects[0].object.name === "rightB") ChooseR = true;
 	}
 	
 }
@@ -215,24 +220,18 @@ function ModeRandom(){
 	if( x >= 0.5 ) InLeft = true;
 	else InRight = true;
 	
-	var ball_geom = new THREE.SphereGeometry (20,32,32);
+	var coinGeom = new THREE.CylinderGeometry (7,7,1,32);
 	var Texture = new THREE.ImageUtils.loadTexture( 'image/get.png' );
-	var GetMesh =  new THREE.Mesh (ball_geom, new THREE.MeshPhongMaterial( { map: Texture } ));
-	
+	var coin = new THREE.Object3D();
+	coin.add(new THREE.Mesh (coinGeom, new THREE.MeshPhongMaterial( { map: Texture } )));
+	coin.translateOnAxis(new THREE.Vector3(0,0,-1), 20);
+	coin.rotation.x = Math.PI/2;
 	
 	if (InLeft) {
-		left_ball.add( GetMesh );
-		if (angle_l > Math.PI) {
-			angle_l = 0.0;
-			InLeft = false;
-		}
+		left_ball.add( coin );
 	}
 	if (InRight) {
-		right_ball.add( GetMesh );
-		if (angle_r > Math.PI) {
-			angle_r = 0.0;
-			InRight = false;
-		}
+		right_ball.add( coin );
 	}
 	
 
@@ -241,7 +240,7 @@ function ModeRandom(){
 
 function animate()
 {
-	//ModeRandom();
+	
 	if(time < 3 && !stop){
 		time += 0.05;
 		angle_l += 0.2; angle_r += 0.2;
@@ -257,21 +256,57 @@ function animate()
 		angle_r = 0.0;
 		time = 0;
 		stop = !stop;
+		
+		ModeRandom();
 	}
+	
 	
 	if (ChooseL) {
 		angle_l += 0.1; 
-		if (angle_l == Math.PI) {
-			angle_l = 0.0;
+		if (angle_l > Math.PI) {
+			angle_l = Math.PI;
 			ChooseL = false;
+			if(InLeft){
+				alert("You Win!!!!!");
+				localStorage.setItem ("Win", ++Win);
+				InLeft = false;
+				init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else{
+				alert("So Sad~  You Lose.....");
+				localStorage.setItem ("Lose", ++Lose);
+				init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}	
 		}
+
 	}
+	
 	if (ChooseR) {
-		angle_r += 0.1;
+			angle_r += 0.1;
 		if (angle_r > Math.PI) {
-			angle_r = 0.0;
+			angle_r = Math.PI;
 			ChooseR = false;
+			if(InRight){
+				alert("You Win!!!!!");
+				localStorage.setItem ("Win", ++Win);
+				InRight = false;
+				init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else{
+				alert("So Sad~  You Lose.....");
+				localStorage.setItem ("Lose", ++Lose);
+				init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
 		}
+		
 	}
 		//left_ball.translateX ( 10 );	
 		left_ball.rotation.y = angle_l;
@@ -285,17 +320,17 @@ function animate()
 
 function update()
 {
+	log();
 	controls.update();
 }
 
 
 function onWindowResize() {
-    var ww = $("#canvas").innerWidth();
-    var hh = $("#canvas").innerHeight();
-
-    camera.aspect = ww / hh;
-    camera.updateProjectionMatrix();
-    renderer.setSize(ww, hh);
+    var ww = theCanvasFrame.clientWidth;
+    var hh = theCanvasFrame.clientHeight;
+    camera.aspect = ww/hh;
+	camera.updateProjectionMatrix();
+	renderer.setSize (ww,hh);
 }
 
 function animate2() {
