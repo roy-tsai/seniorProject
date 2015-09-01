@@ -60,11 +60,11 @@ var angle_l = 0, angle_r = 0;
 var ChooseL = false, ChooseR = false, stop = true;
 var InLeft = false, InRight = false;
 var Win = 0, Lose = 0;
-var LLL = 0, LLR = 0, LRL = 0, LRR = 0,
-	RLL = 0, RLR = 0, RRL = 0, RRR = 0;
+
 var theCanvasFrame;	
-var gramData = [];
-	
+var gramHistory = [], gramData = [];
+
+theInit();	
 init();
 animate();
 
@@ -74,16 +74,6 @@ function clearlog()
 	localStorage.setItem ("Lose", 0);
 	Win = Lose = 0;
 	
-	localStorage.setItem ("LLL", 0);
-	localStorage.setItem ("LLR", 0);
-	localStorage.setItem ("LRL", 0);
-	localStorage.setItem ("LRR", 0);
-	localStorage.setItem ("RLL", 0);
-	localStorage.setItem ("RLR", 0);
-	localStorage.setItem ("RRL", 0);
-	localStorage.setItem ("RRR", 0);
-	
-	LLL = LLR = LRL = LRR = RLL = RLR = RRL = RRR = 0; 
 }
 
 function log()
@@ -91,15 +81,18 @@ function log()
 	var winTemp, loseTemp, WINS;
 	winTemp = localStorage.getItem ("Win");
 	loseTemp = localStorage.getItem ("Lose");
-	var add = winTemp + loseTemp;
-	WINS = winTemp/add;
+	var add = parseInt(winTemp) + parseInt(loseTemp);
+	WINS = (parseInt(winTemp)/add)*100;
 
-	$("#W").val(Win);
+	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
-	$("#WvsL").val(WINS);
+	$("#WvsL").val(WINS+"%");
 
 }
 
+function theInit(){
+	for (var i = 0; i < 8; i++) gramData.push(0);
+}
 
 
 function init() {
@@ -108,17 +101,11 @@ function init() {
 	
 	//clearlog();
 	
+	
+	
 	Win = localStorage.getItem ("Win");
 	Lose = localStorage.getItem ("Lose");
-	
-	LLL = localStorage.getItem ("LLL");
-	LLR = localStorage.getItem ("LLR");
-	LRL = localStorage.getItem ("LRL");
-	LRR = localStorage.getItem ("LRR");
-	RLL = localStorage.getItem ("RLL");
-	RLR = localStorage.getItem ("RLR");
-	RRL = localStorage.getItem ("RRL");
-	RRR = localStorage.getItem ("RRR");
+
 
 	renderer = new THREE.WebGLRenderer({
         canvas: theCanvas,
@@ -250,68 +237,17 @@ function ModeRandom(){
 }
 
 function gramCollect(){
-
 	
-	if( ChooseL && gramData.length > 2 ){
-		if( gramData[0] == "L" ){
-			if( gramData[1] == "L" ){
-				localStorage.setItem ("LLL", ++LLL);
-				gramData.shift();
-			}
-			else{
-				localStorage.setItem ("LRL", ++LRL);
-				gramData.shift();
-			}
-		}
-		if( gramData[0] == "R" ){
-			if( gramData[1] == "L" ){
-				localStorage.setItem ("RLL", ++RLL);
-				gramData.shift();
-			}
-			else{
-				localStorage.setItem ("RRL", ++RRL);
-				gramData.shift();
-			}
-		}
-	}
-	
-	else if(ChooseR && gramData.length > 2 ){
-		if( gramData[0] == "L" ){
-			if( gramData[1] == "L" ){
-				localStorage.setItem ("LLR", ++LLR);
-				gramData.shift();
-			}
-			else{
-				localStorage.setItem ("LRR", ++LRR);
-				gramData.shift();
-			}
-		}
-		if( gramData[0] == "R" ){
-			if( gramData[1] == "L" ){
-				localStorage.setItem ("RLR", ++RLR);
-				gramData.shift();
-			}
-			else{
-				localStorage.setItem ("RRR", ++RRR);
-				gramData.shift();
-			}
-		}
-	}
-	console.log(LLL);// + " " + LLR + " " + LRL + " " + LRR);
-//		console.log(RLL + " " + RLR + " " + RRL + " " + RRR);
+	if(gramHistory.length > 2){
+		++gramData[gramHistory[0] * 4 + gramHistory[1] * 2 + gramHistory[2]];
+		console.log(gramHistory);
+		gramHistory.shift();
+		
+		console.log(gramData);
+	 }
 }
 
 function ModeGram(){
-	var tLLL, tLLR, tLRL, tLRR, tRLL, tRLR, tRRL, tRRR;
-	
-	tLLL = localStorage.getItem ("LLL");
-	tLLR = localStorage.getItem ("LLR");
-	tLRL = localStorage.getItem ("LRL");
-	tLRR = localStorage.getItem ("LRR");
-	tRLL = localStorage.getItem ("RLL");
-	tRLR = localStorage.getItem ("RLR");
-	tRRL = localStorage.getItem ("RRL");
-	tRRR = localStorage.getItem ("RRR");
 	
 	var coinGeom = new THREE.CylinderGeometry (7,7,1,32);
 	var Texture = new THREE.ImageUtils.loadTexture( 'image/get.png' );
@@ -321,20 +257,20 @@ function ModeGram(){
 	coin.rotation.x = Math.PI/2;
 	
 
-		if( gramData[0] == "L" ){
-			if( gramData[1] == "L" ){
-				tLLL > tLLR ? InRight = true : InLeft = true;
+		if( gramHistory[0] == 0 ){
+			if( gramHistory[1] == 0 ){
+				gramData[0] > gramData[1] ? InRight = true : InLeft = true;
 			}
 			else{
-				tLRL > tLRR ? InRight = true : InLeft = true;
+				gramData[2] > gramData[3] ? InRight = true : InLeft = true;
 			}
 		}
-		else if( gramData[0] == "R" ){
-			if( gramData[1] == "L" ){
-				tRLL > tRLR ? InRight = true : InLeft = true;
+		else if( gramHistory[0] == 1 ){
+			if( gramHistory[1] == 0 ){
+				gramData[4] > gramData[5] ? InRight = true : InLeft = true;
 			}
 			else{
-				tRRL > tRRR ? InRight = true : InLeft = true;
+				gramData[6] > gramData[7] ? InRight = true : InLeft = true;
 			}
 		}
 
@@ -352,10 +288,10 @@ function animate()
 	
 	if(time < 3 && !stop){
 		time += 0.05;
-		angle_l += 0.2; angle_r += 0.2;
+		angle_l += 0.2; angle_r -= 0.2;
 		left_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
 		left_ball.rotation.y = angle_l;
-		right_ball.translateOnAxis (new THREE.Vector3(0,0,1), -20)	
+		right_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
 		right_ball.rotation.y = angle_r;
 	}
 	else if(time >= 3){
@@ -366,7 +302,7 @@ function animate()
 		time = 0;
 		stop = !stop;
 		
-		if( change && (Win + Lose) > 20 )
+		if( change && (parseInt(Win) + parseInt(Lose)) > 20 )
 			ModeGram();
 		else
 			ModeRandom();
@@ -377,7 +313,7 @@ function animate()
 		angle_l += 0.1; 
 		if (angle_l > Math.PI) {
 			angle_l = Math.PI;
-			gramData.push("L");
+			gramHistory.push(0);
 			gramCollect();
 			ChooseL = false;
 			if(InLeft){
@@ -403,7 +339,7 @@ function animate()
 		angle_r += 0.1;
 		if (angle_r > Math.PI) {
 			angle_r = Math.PI;
-			gramData.push("R");
+			gramHistory.push(1);
 			gramCollect();	
 			ChooseR = false;
 			
