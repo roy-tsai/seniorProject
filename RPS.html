@@ -285,36 +285,35 @@ function ModeGram(){
 
 	if( gramHistory[0] == 0 ){
 		if( gramHistory[1] == 0 ){
-			gramData[0] > gramData[1] ? ( gramData[0] > gramData[2] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
-			//console.log("00");
+			gramData[0] >= gramData[1] ? ( gramData[0] >= gramData[2] ? Texture = TextureP : Texture = TextureR ) : ( gramData[1] >= gramData[2] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 1 ){
-			gramData[3] > gramData[4] ? ( gramData[3] > gramData[5] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[3] >= gramData[4] ? ( gramData[3] >= gramData[5] ? Texture = TextureP : Texture = TextureR ) : ( gramData[4] >= gramData[5] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 2 ){
-			gramData[6] > gramData[7] ? ( gramData[6] > gramData[8] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[6] >= gramData[7] ? ( gramData[6] >= gramData[8] ? Texture = TextureP : Texture = TextureR ) : ( gramData[7] >= gramData[8] ? Texture = TextureS : Texture = TextureR );
 		}
 	}
 	else if( gramHistory[0] == 1 ){
 		if( gramHistory[1] == 0 ){
-			gramData[9] > gramData[10] ? ( gramData[9] > gramData[11] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[9] >= gramData[10] ? ( gramData[9] >= gramData[11] ? Texture = TextureP : Texture = TextureR ) : ( gramData[10] >= gramData[11] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 1 ){
-			gramData[12] > gramData[13] ? ( gramData[12] > gramData[14] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[12] >= gramData[13] ? ( gramData[12] >= gramData[14] ? Texture = TextureP : Texture = TextureR ) : ( gramData[13] >= gramData[14] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 2 ){
-			gramData[15] > gramData[16] ? ( gramData[15] > gramData[17] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[15] >= gramData[16] ? ( gramData[15] >= gramData[17] ? Texture = TextureP : Texture = TextureR ) : ( gramData[16] >= gramData[17] ? Texture = TextureS : Texture = TextureR );
 		}
 	}
 	else if( gramHistory[0] == 2 ){
 		if( gramHistory[1] == 0 ){
-			gramData[18] > gramData[19] ? ( gramData[18] > gramData[20] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[18] >= gramData[19] ? ( gramData[18] >= gramData[20] ? Texture = TextureP : Texture = TextureR ) : ( gramData[19] >= gramData[20] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 1 ){
-			gramData[21] > gramData[22] ? ( gramData[21] > gramData[23] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[21] >= gramData[22] ? ( gramData[21] >= gramData[23] ? Texture = TextureP : Texture = TextureR ) : ( gramData[22] >= gramData[23] ? Texture = TextureS : Texture = TextureR );
 		}
 		else if( gramHistory[1] == 2 ){
-			gramData[24] > gramData[25] ? ( gramData[24] > gramData[26] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			gramData[24] >= gramData[25] ? ( gramData[24] >= gramData[26] ? Texture = TextureP : Texture = TextureR ) : ( gramData[25] >= gramData[26] ? Texture = TextureS : Texture = TextureR );
 		}
 	}
 	
@@ -327,6 +326,7 @@ function ModeGram(){
 	if( Texture == TextureR )C_choose = 0;
 	else if( Texture == TextureP )C_choose = 1;
 	else if( Texture == TextureS )C_choose = 2;
+	
 }
 
 
@@ -359,9 +359,12 @@ function animate()
 	if ( P_choose == 0 ) {
 		//angle_l += 0.1; 
 		//if (angle_l > Math.PI) {angle_l = Math.PI;}
-			if( gramHistory.length > 2 ) 
+		
+			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
+			
+			//else ModeRandom();
 			gramHistory.push(0);
 			gramCollect();
 			if( C_choose == 0 ){
@@ -385,7 +388,7 @@ function animate()
 	else if ( P_choose == 1 ) {
 		//angle_l += 0.1; 
 		//if (angle_l > Math.PI) {angle_l = Math.PI;}
-			if( gramHistory.length > 2 ) 
+			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
 			gramHistory.push(1);
@@ -411,7 +414,7 @@ function animate()
 	else if ( P_choose == 2 ) {
 		//angle_l += 0.1; 
 		//if (angle_l > Math.PI) {angle_l = Math.PI;}
-			if( gramHistory.length > 2 ) 
+			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
 			gramHistory.push(2);
