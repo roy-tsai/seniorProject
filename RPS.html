@@ -30,16 +30,21 @@
 <div id="container">
        <canvas id="cnvs"> </canvas>
 </div>
-<div style="float:left; margin-left: 10px; width:32vw;">Menu:
+<div style="float:left; margin-left: 10px; width:32vw;">
     <button id="turn" style="width:100%">Start</button>
 	<br/>
     <br/>
-	<button id="R-N" style="width:100%">Random</button>
+	<form>
+		Random:<input type="radio" name="mode" id="R">
+		2-gram:<input type="radio" name="mode" id="N">
+		
+	</form>
     <br/>
 	<p style="float:left; margin-left: 10px; width:32vw;">
-	Win:  	<input id="W" style="width:20%" type="text" value="None">
-	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
-	Wins:	<input id="WvsL" style="width:20%" type="text" value="None"></p>
+	Win:  	<input id="W" style="width:10%" type="text" value="None">
+	Lose:	<input id="L" style="width:10%" type="text" value="None">
+	Draw:	<input id="D" style="width:10%" type="text" value="None"><br/>
+	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p>
 	<br/>
     <br/>
 	<button id="clear" style="width:100%">Reset record</button>
@@ -57,8 +62,8 @@ var mouse = new THREE.Vector2();
 
 var left_ball, right_ball;
 var angle_l = 0, angle_r = 0;
-//var ChooseL = false, ChooseR = false, stop = true;
-var Win = 0, Lose = 0;
+
+var RPS_Win = 0, RPS_Lose = 0;
 var P_choose = 100, C_choose = 0;
 
 var theCanvasFrame;	
@@ -70,23 +75,25 @@ animate();
 
 function clearlog()
 {
-	localStorage.setItem ("Win", 0);
-	localStorage.setItem ("Lose", 0);
-	Win = Lose = 0;
+	localStorage.setItem ("RPS_Win", 0);
+	localStorage.setItem ("RPS_Lose", 0);
+	RPS_Win = RPS_Lose = 0;
 	
 }
 
 function log()
 {
 	var winTemp, loseTemp, WINS;
-	winTemp = localStorage.getItem ("Win");
-	loseTemp = localStorage.getItem ("Lose");
+	winTemp = localStorage.getItem ("RPS_Win");
+	loseTemp = localStorage.getItem ("RPS_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
+	if( add == 0 )add = 1;
 	WINS = (parseInt(winTemp)/add)*100;
+
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
-	$("#WvsL").val(WINS+"%");
+	$("#WvsL").val(WINS.toFixed(2));
 
 }
 
@@ -101,8 +108,8 @@ function init() {
 	
 	//clearlog();
 	
-	Win = localStorage.getItem ("Win");
-	Lose = localStorage.getItem ("Lose");
+	RPS_Win = localStorage.getItem ("RPS_Win");
+	RPS_Lose = localStorage.getItem ("RPS_Lose");
 
 
 	renderer = new THREE.WebGLRenderer({
@@ -154,13 +161,6 @@ $("#turn").click(function () {
 	}
 });
 
-$("#R-N").click(function () {
-    P_choose = !P_choose;
-    if (P_choose)
-        $("#R-N").html ("2-gram");
-    else
-        $("#R-N").html ("Random");
-});
 
 $("#clear").click(function () {
    clearlog();
@@ -373,13 +373,13 @@ function animate()
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("RPS_Win", ++RPS_Win);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");
@@ -399,13 +399,13 @@ function animate()
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("RPS_Win", ++RPS_Win);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");
@@ -425,13 +425,13 @@ function animate()
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("RPS_Win", ++RPS_Win);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
 				//init();
 				turn = !turn;
 				$("#turn").html ("Start");

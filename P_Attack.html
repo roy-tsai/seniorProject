@@ -30,16 +30,20 @@
 <div id="container">
        <canvas id="cnvs"> </canvas>
 </div>
-<div style="float:left; margin-left: 10px; width:32vw;">Menu:
+<div style="float:left; margin-left: 10px; width:32vw;">
     <button id="turn" style="width:100%">Start</button>
 	<br/>
     <br/>
-	<button id="R-N" style="width:100%">Random</button>
+	<form>
+		Random:<input type="radio" name="mode" id="R">
+		2-gram:<input type="radio" name="mode" id="N">
+		
+	</form>
     <br/>
 	<p style="float:left; margin-left: 10px; width:32vw;">
 	Win:  	<input id="W" style="width:20%" type="text" value="None">
 	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
-	Wins:	<input id="WvsL" style="width:20%" type="text" value="None"></p>
+	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p>
 	<br/>
     <br/>
 	<button id="clear" style="width:100%">Reset record</button>
@@ -56,12 +60,14 @@ var scene, renderer, camera, controls, raycaste;
 var mouse = new THREE.Vector2();
 
 var angle_l = 0, angle_r = 0;
-//var ChooseL = false, ChooseR = false, stop = true;
-var Win = 0, Lose = 0;
+
+var Attack_Win = 0, Attack_Lost = 0;
 var M_choose = 100, H_choose = 100, C_choose = 0;
+var box_matR, box_matP, box_matDP, box_mat0, box_mat5, box_mat10,
+	box_mat15, box_mat20, box_matH, box_matM;
 
 var theCanvasFrame;	
-var gramHistory_M = [], gramHistory_H = [], gramDataM = [], gramDataH = [];
+var gramHistory = [], gramHistory_M = [], gramHistory_H = [], gramData = [];
 
 theInit();	
 init();
@@ -69,28 +75,32 @@ animate();
 
 function clearlog()
 {
-	localStorage.setItem ("Win", 0);
-	localStorage.setItem ("Lose", 0);
-	Win = Lose = 0;
+	localStorage.setItem ("Attack_Win", 0);
+	localStorage.setItem ("Attack_Lost", 0);
+	Attack_Win = Attack_Lost = 0;
 	
 }
 
 function log()
 {
 	var winTemp, loseTemp, WINS;
-	winTemp = localStorage.getItem ("Win");
-	loseTemp = localStorage.getItem ("Lose");
+	winTemp = localStorage.getItem ("Attack_Win");
+	loseTemp = localStorage.getItem ("Attack_Lost");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
+	if( add == 0 )add = 1;
 	WINS = (parseInt(winTemp)/add)*100;
+
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
-	$("#WvsL").val(WINS+"%");
+	$("#WvsL").val(WINS.toFixed(2));
 
+	
 }
 
 function theInit(){
-	for (var i = 0; i < 27; i++) gramDataM.push(0);
+	//clearlog();
+	for (var i = 0; i < 27; i++) gramData.push(0);
 }
 
 
@@ -100,8 +110,8 @@ function init() {
 	
 	//clearlog();
 	
-	Win = localStorage.getItem ("Win");
-	Lose = localStorage.getItem ("Lose");
+	Attack_Win = localStorage.getItem ("Attack_Win");
+	Attack_Lost = localStorage.getItem ("Attack_Lost");
 
 
 	renderer = new THREE.WebGLRenderer({
@@ -153,13 +163,6 @@ $("#turn").click(function () {
 	}
 });
 
-$("#R-N").click(function () {
-    P_choose = !P_choose;
-    if (P_choose)
-        $("#R-N").html ("2-gram");
-    else
-        $("#R-N").html ("Random");
-});
 
 $("#clear").click(function () {
    clearlog();
@@ -167,28 +170,29 @@ $("#clear").click(function () {
 
 function P_Attack(){
 	var box_geom = new THREE.BoxGeometry (20,20,20);
+	
 	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
-	var box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR});
+	box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR,transparent: true});
 	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var box_matP = new THREE.MeshPhongMaterial ({color: 0xdffffff,map: TextureP});
+	box_matP = new THREE.MeshPhongMaterial ({color: 0xdffffff,map: TextureP,transparent: true});
 	var TextureDP = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );
-	var box_matDP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureDP});
+	box_matDP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureDP,transparent: true});
 	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
-	var box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
+	box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
 	var Texture15 = new THREE.ImageUtils.loadTexture( 'image/15.jpg' );
-	var box_mat15 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture15});
+	box_mat15 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture15,transparent: true});
 	var Texture20 = new THREE.ImageUtils.loadTexture( 'image/20.jpg' );
-	var box_mat20 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture20});
+	box_mat20 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture20,transparent: true});
 	var Texture10 = new THREE.ImageUtils.loadTexture( 'image/10.jpg' );
-	var box_mat10 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture10});
+	box_mat10 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture10,transparent: true});
 	var Texture5 = new THREE.ImageUtils.loadTexture( 'image/5.jpg' );
-	var box_mat5 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture5});
+	box_mat5 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture5,transparent: true});
 	var Texture0 = new THREE.ImageUtils.loadTexture( 'image/0.jpg' );
-	var box_mat0 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture0});
+	box_mat0 = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture0,transparent: true});
 	var TextureH = new THREE.ImageUtils.loadTexture( 'image/hand.jpg' );
-	var box_matH = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureH});
+	box_matH = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureH,transparent: true});
 	var TextureM = new THREE.ImageUtils.loadTexture( 'image/mouth.png' );
-	var box_matM = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureM});
+	box_matM = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureM,transparent: true});
 	
 	C_Box = new THREE.Mesh (box_geom, box_matQ);
 	C_Box.position.set (0,100,0);
@@ -197,7 +201,7 @@ function P_Attack(){
 	
 	//hand action
 	H_Box = new THREE.Mesh (box_geom, box_matH);
-	H_Box.position.set (-40,10,0);
+	H_Box.position.set (-45,10,0);
 	H_Box.name = "Hbox";
 	scene.add (H_Box);
 	
@@ -218,7 +222,7 @@ function P_Attack(){
 	
 	//mouth action
 	M_Box = new THREE.Mesh (box_geom, box_matM);
-	M_Box.position.set (-40,30,0);
+	M_Box.position.set (-45,30,0);
 	M_Box.name = "Mbox";
 	scene.add (M_Box);
 	
@@ -251,61 +255,65 @@ function P_Attack(){
 function whenChoose(){
 	
 	if( M_choose == 0 ){
-		M5_Box.position.set (-40,30,-1);
-		M10_Box.position.set (-40,30,-1);
-		M15_Box.position.set (-40,30,-1);
-		M20_Box.position.set (-40,30,-1);
-		P_Box.position.set (-40,10,-1);
-		DP_Box.position.set (-40,10,-1);
-
+		box_matP.opacity = 0.1;
+		box_matDP.opacity = 0.1;
+		box_mat0.opacity = 1;
+		box_mat5.opacity = 0.1;
+		box_mat10.opacity = 0.1;
+		box_mat15.opacity = 0.1;
+		box_mat20.opacity = 0.1;
 	}
 	else if( M_choose == 5 ){
-		M0_Box.position.set (-40,30,-1);
-		M10_Box.position.set (-40,30,-1);
-		M15_Box.position.set (-40,30,-1);
-		M20_Box.position.set (-40,30,-1);
-		DP_Box.position.set (-40,10,-1);
-
+		box_matDP.opacity = 0.1;
+		box_mat0.opacity = 0.1;
+		box_mat5.opacity = 1;
+		box_mat10.opacity = 0.1;
+		box_mat15.opacity = 0.1;
+		box_mat20.opacity = 0.1;
 	}
 	else if( M_choose == 10 ){
-		M5_Box.position.set (-40,30,-1);
-		M0_Box.position.set (-40,30,-1);
-		M15_Box.position.set (-40,30,-1);
-		M20_Box.position.set (-40,30,-1);
+		box_mat0.opacity = 0.1;
+		box_mat5.opacity = 0.1;
+		box_mat10.opacity = 1;
+		box_mat15.opacity = 0.1;
+		box_mat20.opacity = 0.1;
 
 	}
 	else if( M_choose == 15 ){
-		M5_Box.position.set (-40,30,-1);
-		M10_Box.position.set (-40,30,-1);
-		M0_Box.position.set (-40,30,-1);
-		M20_Box.position.set (-40,30,-1);
-		R_Box.position.set (-40,10,-1);
-
+		box_matR.opacity = 0.1;
+		box_mat0.opacity = 0.1;
+		box_mat5.opacity = 0.1;
+		box_mat10.opacity = 0.1;
+		box_mat15.opacity = 1;
+		box_mat20.opacity = 0.1;
 	}
 	else if( M_choose == 20 ){
-		M5_Box.position.set (-40,30,-1);
-		M10_Box.position.set (-40,30,-1);
-		M15_Box.position.set (-40,30,-1);
-		M0_Box.position.set (-40,30,-1);
-		R_Box.position.set (-40,10,-1);
-		P_Box.position.set (-40,10,-1);
-	
+		box_matP.opacity = 0.1;
+		box_matR.opacity = 0.1;
+		box_mat0.opacity = 0.1;
+		box_mat5.opacity = 0.1;
+		box_mat10.opacity = 0.1;
+		box_mat15.opacity = 0.1;
+		box_mat20.opacity = 1;
 	}
 }
 
 function whenChooseH(){
 
 	if( H_choose == 0 ){
-		P_Box.position.set (-40,10,-1);
-		DP_Box.position.set (-40,10,-1);
+		box_matR.opacity = 1;
+		box_matP.opacity = 0.1;
+		box_matDP.opacity = 0.1;
 	}
 	else if( H_choose == 5 ){
-		R_Box.position.set (-40,10,-1);
-		DP_Box.position.set (-40,10,-1);
+		box_matR.opacity = 0.1;
+		box_matP.opacity = 1;
+		box_matDP.opacity = 0.1;
 	}
 	else if( H_choose == 10 ){
-		R_Box.position.set (-40,10,-1);
-		P_Box.position.set (-40,10,-1);
+		box_matR.opacity = 0.1;
+		box_matP.opacity = 0.1;
+		box_matDP.opacity = 1;
 	}
 
 }
@@ -368,58 +376,37 @@ function ModeRandom(){
 function gramCollect(){
 	
 	if(gramHistory_M.length > 2){
-		++gramDataM[gramHistory_M[0] * 25 + gramHistory_M[1] * 5 + gramHistory_M[2]];
-		//console.log(gramHistory_M);
-		gramHistory_M.shift();
-		//console.log(gramDataM);
-		if(gramHistory_H.length > 2){
-			++gramDataH[gramHistory_H[0] * 9 + gramHistory_H[1] * 3 + gramHistory_H[2]];
-			//console.log(gramHistory_H);
-			gramHistory_H.shift();
-			//console.log(gramDataH);
+		for(i = 0; i < 3; i++){
+			gramHistory[i] = gramHistory_M[i] - gramHistory_H[i];
+			if(gramHistory[i] == 5) gramHistory[i] = 1;
+			else if(gramHistory[i] == 10) gramHistory[i] = 2;
 		}
+		
+		++gramData[gramHistory[0] * 9 + gramHistory[1] * 3 + gramHistory[2]];
+		console.log(gramHistory);
+		gramHistory_M.shift();
+		console.log(gramData);
 	 }
 }
 
-function ModeGram(){
-	
-	var Texture;
+function ChooseTex(c){	
+
+	var Texture, x = Math.random();
 	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
 	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var TextureDP = new THREE.ImageUtils.loadTexture( 'image/DP.jpg' );
-
-	if( gramHistory_M[0] == 0 ){
-		if( gramHistory_M[1] == 0 ){
-			gramDataM[0] >= gramDataM[1] ? ( gramDataM[0] >= gramDataM[2] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[1] >= gramDataM[2] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 5 ){
-			gramDataM[3] >= gramDataM[4] ? ( gramDataM[3] >= gramDataM[5] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[4] >= gramDataM[5] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 10 ){
-			gramDataM[6] >= gramDataM[7] ? ( gramDataM[6] >= gramDataM[8] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[7] >= gramDataM[8] ? Texture = TextureDP : Texture = TextureR );
-		}
+	var TextureDP = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );
+	
+	if(c == 0){
+		if( x <= 0.5 ){ Texture = TextureP;  C_choose = 5;}
+		else { Texture = TextureDP; C_choose = 10;}
 	}
-	else if( gramHistory_M[0] == 5 ){
-		if( gramHistory_M[1] == 0 ){
-			gramDataM[9] >= gramDataM[10] ? ( gramDataM[9] >= gramDataM[11] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[10] >= gramDataM[11] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 5 ){
-			gramDataM[12] >= gramDataM[13] ? ( gramDataM[12] >= gramDataM[14] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[13] >= gramDataM[14] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 10 ){
-			gramDataM[15] >= gramDataM[16] ? ( gramDataM[15] >= gramDataM[17] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[16] >= gramDataM[17] ? Texture = TextureDP : Texture = TextureR );
-		}
+	else if(c == 1){
+		if( x <= 0.5 ){ Texture = TextureR;  C_choose = 0;}
+		else { Texture = TextureDP; C_choose = 10;}
 	}
-	else if( gramHistory_M[0] == 10 ){
-		if( gramHistory_M[1] == 0 ){
-			gramDataM[18] >= gramDataM[19] ? ( gramDataM[18] >= gramDataM[20] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[19] >= gramDataM[20] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 5 ){
-			gramDataM[21] >= gramDataM[22] ? ( gramDataM[21] >= gramDataM[23] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[22] >= gramDataM[23] ? Texture = TextureDP : Texture = TextureR );
-		}
-		else if( gramHistory_M[1] == 10 ){
-			gramDataM[24] >= gramDataM[25] ? ( gramDataM[24] >= gramDataM[26] ? Texture = TextureP : Texture = TextureR ) : ( gramDataM[25] >= gramDataM[26] ? Texture = TextureDP : Texture = TextureR );
-		}
+	else if(c == 2){
+		if( x <= 0.5 ){ Texture = TextureR;  C_choose = 0;}
+		else { Texture = TextureP; C_choose = 5;}
 	}
 	
 	var box_geom = new THREE.BoxGeometry (20,20,20);
@@ -427,12 +414,51 @@ function ModeGram(){
 	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
 	scene.add (C_Box);
-	
-	if( Texture == TextureR )C_choose = 0;
-	else if( Texture == TextureP )C_choose = 5;
-	else if( Texture == TextureDP )C_choose = 10;
-	
+
 }
+
+
+function ModeGram(){
+	
+	var x = 0;
+	
+	if( gramHistory[0] == 0 ){
+		if( gramHistory[1] == 0 ){
+			gramData[0] >= gramData[1] ? ( gramData[0] >= gramData[2] ? x = 0 : x = 2 ) : ( gramData[1] >= gramData[2] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[3] >= gramData[4] ? ( gramData[3] >= gramData[5] ? x = 0 : x = 2 ) : ( gramData[4] >= gramData[5] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[6] >= gramData[7] ? ( gramData[6] >= gramData[8] ? x = 0 : x = 2 ) : ( gramData[7] >= gramData[8] ? x = 1 : x = 2 );
+		}
+	}
+	else if( gramHistory[0] == 1 ){
+		if( gramHistory[1] == 0 ){
+			gramData[9] >= gramData[10] ? ( gramData[9] >= gramData[11] ? x = 0 : x = 2 ) : ( gramData[10] >= gramData[11] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[12] >= gramData[13] ? ( gramData[12] >= gramData[14] ? x = 0 : x = 2 ) : ( gramData[13] >= gramData[14] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[15] >= gramData[16] ? ( gramData[15] >= gramData[17] ? x = 0 : x = 2 ) : ( gramData[16] >= gramData[17] ? x = 1 : x = 2 );
+		}
+	}
+	else if( gramHistory[0] == 2 ){
+		if( gramHistory[1] == 0 ){
+			gramData[18] >= gramData[19] ? ( gramData[18] >= gramData[20] ? x = 0 : x = 2 ) : ( gramData[19] >= gramData[20] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[21] >= gramData[22] ? ( gramData[21] >= gramData[23] ? x = 0 : x = 2 ) : ( gramData[22] >= gramData[23] ? x = 1 : x = 2 );
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[24] >= gramData[25] ? ( gramData[24] >= gramData[26] ? x = 0 : x = 2 ) : ( gramData[25] >= gramData[26] ? x = 1 : x = 2 );
+		}
+	}
+	
+	ChooseTex(x);
+}
+
 
 
 function animate()
@@ -445,18 +471,18 @@ function animate()
 			gramHistory_H.push(0);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( gramHistory_M.length >= 2 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 0 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -469,18 +495,18 @@ function animate()
 			gramHistory_H.push(0);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 5 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -489,18 +515,18 @@ function animate()
 			gramHistory_H.push(5);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 0 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -512,18 +538,18 @@ function animate()
 			gramHistory_H.push(0);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 10 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -532,18 +558,18 @@ function animate()
 			gramHistory_H.push(5);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 5 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -552,18 +578,18 @@ function animate()
 			gramHistory_H.push(10);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 0 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -575,18 +601,18 @@ function animate()
 			gramHistory_H.push(5);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 10 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -595,18 +621,18 @@ function animate()
 			gramHistory_H.push(10);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 5 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -619,18 +645,18 @@ function animate()
 			gramHistory_H.push(10);
 			gramCollect();					
 			
-			//if( gramHistory_M.length >= 2 ) 
-			//ModeGram();
-			//else 
+			if( document.getElementById("N").checked == true && (parseInt(Attack_Win) + parseInt(Attack_Lose)) >= 20 ) 
+			ModeGram();
+			else 
 			ModeRandom();
 			
 			if( C_choose == 10 ){
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Attack_Win", ++Attack_Win);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Lose", ++Lose);
+				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
