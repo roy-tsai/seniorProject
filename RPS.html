@@ -44,30 +44,42 @@
 	Win:  	<input id="W" style="width:10%" type="text" value="None">
 	Lose:	<input id="L" style="width:10%" type="text" value="None">
 	Draw:	<input id="D" style="width:10%" type="text" value="None"><br/>
-	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p>
-	<br/>
-    <br/>
+	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%
+	<br/><br/>
+	Miss:	<input id="Miss" style="width:10%" type="text" value="None"></p>
+    <br/><br/>
 	<button id="clear" style="width:100%">Reset record</button>
 </div>
 <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
 
+<script src="js/Projector.js"></script>
+<script src="js/CanvasRenderer.js"></script>
+<script src="js/helvetiker_regular.typeface.js"></script>
+
+
 <script>
 
 var time = 0;
-var turn = false, P_choose = false;
+var check = false;
+var turn = false;
 var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
 var left_ball, right_ball;
 var angle_l = 0, angle_r = 0;
 
-var RPS_Win = 0, RPS_Lose = 0;
+var RPS_Win = 0, RPS_Lose = 0, RPS_Draw = 0, RPS_Miss = 0;
 var P_choose = 100, C_choose = 0;
+var box_matR, box_matP, box_matS, box_mat;
+var box_geomR, box_geomP, box_geomS, box_geom;
 
 var theCanvasFrame;	
 var gramHistory = [], gramData = [];
+
+var sceneCB, cameraCB, sceneHUD, cameraHUD;
+var group, text;
 
 theInit();	
 init();
@@ -76,23 +88,35 @@ animate();
 function clearlog()
 {
 	localStorage.setItem ("RPS_Win", 0);
+	localStorage.setItem ("RPS_Draw", 0);
 	localStorage.setItem ("RPS_Lose", 0);
-	RPS_Win = RPS_Lose = 0;
+	localStorage.setItem ("RPS_Miss", 0);
+	RPS_Win = RPS_Draw = RPS_Lose = RPS_Miss = 0;
 	
 }
 
 function log()
 {
-	var winTemp, loseTemp, WINS;
+	var winTemp, drawTemp, loseTemp, MisTemp, WINS;
 	winTemp = localStorage.getItem ("RPS_Win");
+	drawTemp = localStorage.getItem ("RPS_Draw");
 	loseTemp = localStorage.getItem ("RPS_Lose");
-	var add = parseInt(winTemp) + parseInt(loseTemp);
-	if( add == 0 )add = 1;
+	MisTemp = localStorage.getItem ("RPS_Miss");
+	var add = parseInt(winTemp) + parseInt(drawTemp) + parseInt(loseTemp);
+	if( add == 0 ){
+		add = 1;
+		winTemp = 0;
+		loseTemp = 0;
+		drawTemp = 0;
+		MisTemp = 0;
+	}
 	WINS = (parseInt(winTemp)/add)*100;
 
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
+	$("#D").val(drawTemp);
+	$("#Miss").val(MisTemp);
 	$("#WvsL").val(WINS.toFixed(2));
 
 }
@@ -102,11 +126,137 @@ function theInit(){
 }
 
 
+function initHUD() {
+    sceneHUD = new THREE.Scene();
+    cameraHUD = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
+    cameraHUD.position.z = 20;
+    cameraHUD.lookAt(new THREE.Vector3(0, 0, 0));
+
+	// Get text from hash
+
+	var theText, theText1 = "YOU WIN!!", theText2 = "YOU LOSE!!", theText3 = "MISS!!";
+	var textMaterial;
+	var hash = document.location.hash.substr( 1 );
+	
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xffff00, overdraw: 0.5 } );
+	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
+	var textMaterial3 = new THREE.MeshBasicMaterial( { color:0x0000ff, overdraw: 0.5 } );
+	
+	//if(ChooseL == InLeft || ChooseR == InRight) {
+		textMaterial = textMaterial3;
+		theText = theText3;
+	/*}
+	else {
+		textMaterial = textMaterial2;
+		theText = theText2;
+	}*/
+
+	if ( hash.length !== 0 ) {
+		theText = hash;
+	}
+
+	var text3d = new THREE.TextGeometry( theText, {
+
+		size: 8,
+		height: 5,
+		curveSegments: 2,
+		font: "helvetiker"
+
+	});
+
+	text3d.computeBoundingBox();
+	var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+	
+	text = new THREE.Mesh( text3d, textMaterial );
+
+	text.position.x = centerOffset;
+	text.position.y = 10;
+	text.position.z = 0;
+
+	group = new THREE.Group();
+	group.add( text );
+	
+	sceneHUD.add( group );
+	
+}
+
+function countBack() {
+    sceneCB = new THREE.Scene();
+    cameraCB = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
+    cameraCB.position.z = 20;
+    cameraCB.lookAt(new THREE.Vector3(0, 0, 0));
+
+	// Get text from hash
+
+	var theText, theText1 = "1", theText2 = "2", theText3 = "3", theText4 = "GO!", theText5 = "";
+	var textMaterial;
+	var hash = document.location.hash.substr( 1 );
+	
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
+	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff9900, overdraw: 0.5 } );
+
+	
+	if(time <= 1) {
+		textMaterial = textMaterial2;
+		theText = theText3;
+	}
+	if(1 < time && time <= 2.2) {
+		textMaterial = textMaterial2;
+		theText = theText2;
+	}
+	if(2.2 < time && time <= 3.2) {
+		textMaterial = textMaterial2;
+		theText = theText1;
+	}
+	if(3.2 < time && time <= 4.2) {
+		textMaterial = textMaterial1;
+		theText = theText4;
+	} 
+	if(4.2 < time) {
+		textMaterial = textMaterial1;
+		theText = theText5;
+	} 
+
+
+	if ( hash.length !== 0 ) {
+		theText = hash;
+	}
+
+	var text3d = new THREE.TextGeometry( theText, {
+
+		size: 8,
+		height: 5,
+		curveSegments: 2,
+		font: "helvetiker"
+
+	});
+
+	text3d.computeBoundingBox();
+	var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+	
+	text = new THREE.Mesh( text3d, textMaterial );
+
+	text.position.x = centerOffset;
+	text.position.y = 10;
+	text.position.z = 0;
+
+	group = new THREE.Group();
+	group.add( text );
+	
+	sceneCB.add( group );
+	
+}
+
+
+
 function init() {
+	//initHUD();
+	
     var theCanvas = document.getElementById("cnvs");
     theCanvasFrame = document.getElementById("container");	
 	
-	//clearlog();
 	
 	RPS_Win = localStorage.getItem ("RPS_Win");
 	RPS_Lose = localStorage.getItem ("RPS_Lose");
@@ -146,6 +296,8 @@ function init() {
 
 	raycaster = new THREE.Raycaster();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	
+	renderer.autoClear = false;
 
 }
 
@@ -166,53 +318,61 @@ $("#clear").click(function () {
    clearlog();
 });
 
-function RPS(){
-	var box_geom = new THREE.BoxGeometry (30,30,30);
-	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
-	var box_matR = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureR});
-	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var box_matP = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureP});
-	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
-	var box_matS = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureS});
-	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
-	var box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
 
-	C_Box = new THREE.Mesh (box_geom, box_matQ);
+
+
+function RPS(){
+
+	box_geomR = new THREE.BoxGeometry (30,30,30);
+	box_geomP = new THREE.BoxGeometry (30,30,30);
+	box_geomS = new THREE.BoxGeometry (30,30,30);
+	box_geom = new THREE.BoxGeometry (30,30,30);
+	
+	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+	box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR,transparent: true});
+	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
+	box_matP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureP,transparent: true});
+	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
+	box_matS = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureS,transparent: true});
+	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
+	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
+
+	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
 	C_Box.name = "Cbox";
 	scene.add (C_Box);
 	
-	R_Box = new THREE.Mesh (box_geom, box_matR);
+	R_Box = new THREE.Mesh (box_geomR, box_matR);
 	R_Box.position.set (-50,20,0);
 	R_Box.name = "Rbox";
 	scene.add (R_Box);
 	
-	P_Box = new THREE.Mesh (box_geom, box_matP);
+	P_Box = new THREE.Mesh (box_geomP, box_matP);
 	P_Box.position.set (0,20,0);
 	P_Box.name = "Pbox";
 	scene.add (P_Box);
 	
-	S_Box = new THREE.Mesh (box_geom, box_matS);
+	S_Box = new THREE.Mesh (box_geomS, box_matS);
 	S_Box.position.set (50,20,0);
 	S_Box.name = "Sbox";
 	scene.add (S_Box);
 }
 
 function whenChoose(){
-	var box_geom = new THREE.BoxGeometry (30,30,30);
-	var box_mat = new THREE.MeshPhongMaterial ({color: 0x555555});
-	
 	if( P_choose == 0 ){
-		P_Box.position.set (0,-50,0);
-		S_Box.position.set (50,-50,0);
+		box_matP.opacity = 0.1;
+		box_matS.opacity = 0.1;
+		box_matR.opacity = 1;
 	}
 	else if( P_choose == 1 ){
-		R_Box.position.set (-50,-50,0);
-		S_Box.position.set (50,-50,0);
+		box_matP.opacity = 1;
+		box_matS.opacity = 0.1;
+		box_matR.opacity = 0.1;
 	}
 	else if( P_choose == 2 ){
-		P_Box.position.set (0,-50,0);
-		R_Box.position.set (-50,-50,0);
+		box_matP.opacity = 0.1;
+		box_matS.opacity = 1;
+		box_matR.opacity = 0.1;
 	}
 }
 
@@ -226,6 +386,60 @@ function light(){
 	var ambientLight = new THREE.AmbientLight (0x111111);
 	scene.add(ambientLight);
 }
+
+function WLperform(){
+	if ( P_choose == 0 ) {
+		if( C_choose == 0 ){
+			box_matR.color = new THREE.Color(0xffff00);
+			box_mat.color =  new THREE.Color(0xffff00);
+		}
+		else if( C_choose == 2 ){
+			/*box_geomR = new THREE.BoxGeometry (50,50,50);
+			R_Box = new THREE.Mesh (box_geomR, box_matR);
+			scene.add (R_Box);*/
+			box_matR.color = new THREE.Color(0x00ff00);
+			box_mat.color = new THREE.Color(0xff0000);
+		}
+		else if( C_choose == 1 ){
+			//box_geom = new THREE.BoxGeometry (50,50,50);
+			box_matR.color = new THREE.Color(0xff0000);
+			box_mat.color = new THREE.Color(0x00ff00);
+		}		
+	}
+	else if ( P_choose == 1 ) {
+		if( C_choose == 1 ){
+			box_matP.color = new THREE.Color(0xffff00);
+			box_mat.color =  new THREE.Color(0xffff00);
+		}
+		else if( C_choose == 0 ){
+			//box_geomP = new THREE.BoxGeometry (50,50,50);
+			box_matP.color = new THREE.Color(0x00ff00);
+			box_mat.color = new THREE.Color(0xff0000);
+		}
+		else if( C_choose == 2 ){
+			//box_geom = new THREE.BoxGeometry (50,50,50);
+			box_matP.color = new THREE.Color(0xff0000);
+			box_mat.color = new THREE.Color(0x00ff00);
+		}			
+	}	
+	else if ( P_choose == 2 ) {
+		if( C_choose == 2 ){
+			box_matS.color = new THREE.Color(0xffff00);
+			box_mat.color =  new THREE.Color(0xffff00);
+		}
+		else if( C_choose == 1 ){
+			//box_geomS = new THREE.BoxGeometry (50,50,50);
+			box_matS.color = new THREE.Color(0x00ff00);
+			box_mat.color = new THREE.Color(0xff0000);
+		}
+		else if( C_choose == 0 ){
+			//box_geom = new THREE.BoxGeometry (50,50,50);
+			box_matS.color = new THREE.Color(0xff0000);
+			box_mat.color = new THREE.Color(0x00ff00);
+		}			
+	}
+}
+
 
 function onDocumentMouseDown( event ) {
 	// PICKING DETAILS: 
@@ -243,9 +457,9 @@ function onDocumentMouseDown( event ) {
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 	var intersects = raycaster.intersectObjects( scene.children );
 	if ( intersects.length > 0 ) {
-		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose();}
-		else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose();}
-		else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose();}
+		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose(); check = true;}
+		else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose(); check = true;}
+		else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose(); check = true;}
 	}
 	
 }
@@ -257,8 +471,8 @@ function ModeRandom(){
 	else if( x <= 0.66 && x > 0.33 ){ Texture = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_choose = 1;}
 	else if( x > 0.66 ){ Texture = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );  C_choose = 2;}
 	
-	var box_geom = new THREE.BoxGeometry (30,30,30);
-	var box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	box_geom = new THREE.BoxGeometry (30,30,30);
+	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
 	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
 	scene.add (C_Box);
@@ -317,8 +531,8 @@ function ModeGram(){
 		}
 	}
 	
-	var box_geom = new THREE.BoxGeometry (30,30,30);
-	var box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	box_geom = new THREE.BoxGeometry (30,30,30);
+	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
 	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
 	scene.add (C_Box);
@@ -333,118 +547,121 @@ function ModeGram(){
 function animate()
 {
 	
-	/*if(time < 3 && !stop){
+	//count back
+	if(time < 4.3 && !stop){
 		time += 0.05;
-		angle_l += 0.2; angle_r -= 0.2;
-		left_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
-		left_ball.rotation.y = angle_l;
-		right_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
-		right_ball.rotation.y = angle_r;
+		countBack();
+		//console.log(time);
 	}
-	else if(time >= 3){
-		left_ball.position.set (-50,10,0);
-		right_ball.position.set (50,10,0);
-		angle_l = 0.0;
-		angle_r = 0.0;
-		time = 0;
+	else if(time >= 4.3 && time < 6 && check == false){
+		time += 0.05;
+	}
+	else if(time >= 4.3 && time < 6 && check == true){
 		stop = !stop;
-		
-		if( P_choose && (parseInt(Win) + parseInt(Lose)) > 20 )
-			ModeGram();
-		else
-			ModeRandom();
+		time = 0;
 	}
-	*/
+	else if(time >= 6 && check == false){
+		stop = !stop;
+		time = 0;
+		localStorage.setItem ("RPS_Miss", ++RPS_Miss);
+		var MisTemp = localStorage.getItem ("RPS_Miss");
+		if( MisTemp == 2){
+			localStorage.setItem ("RPS_Lose", ++RPS_Lose);
+			localStorage.setItem ("RPS_Miss", 0);
+			RPS_Miss = 0;
+		}
+		initHUD();
+		turn = !turn;
+		$("#turn").html ("Start");
+	}
+
 	
 	if ( P_choose == 0 ) {
-		//angle_l += 0.1; 
-		//if (angle_l > Math.PI) {angle_l = Math.PI;}
-		
+			check = false;
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
-			
-			//else ModeRandom();
+
 			gramHistory.push(0);
 			gramCollect();
 			if( C_choose == 0 ){
-				//init();
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
+				
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 2 ){
 				localStorage.setItem ("RPS_Win", ++RPS_Win);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 1 ){
 				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
-			}			
+			}
+
+			
+
 	}
 	else if ( P_choose == 1 ) {
-		//angle_l += 0.1; 
-		//if (angle_l > Math.PI) {angle_l = Math.PI;}
+			check = false;	
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
 			gramHistory.push(1);
 			gramCollect();
 			if( C_choose == 1 ){
-				//init();
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
+			
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 0 ){
 				localStorage.setItem ("RPS_Win", ++RPS_Win);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 2 ){
 				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
 			}			
 	}	
 	else if ( P_choose == 2 ) {
-		//angle_l += 0.1; 
-		//if (angle_l > Math.PI) {angle_l = Math.PI;}
+			check = false;
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
 			else ModeRandom();
 			gramHistory.push(2);
 			gramCollect();
 			if( C_choose == 2 ){
-				//init();
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
+				
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 1 ){
 				localStorage.setItem ("RPS_Win", ++RPS_Win);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 			else if( C_choose == 0 ){
 				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-				//init();
+
 				turn = !turn;
 				$("#turn").html ("Start");
 			}			
 	}
 
-	
-
+	WLperform();
 	P_choose = C_choose = 100;
-
-	//left_ball.rotation.y = angle_l;
-	//right_ball.rotation.y = angle_r;
-
+	
 	requestAnimationFrame ( animate );  
 	update();
 	render(); 
@@ -465,19 +682,12 @@ function onWindowResize() {
 	renderer.setSize (ww,hh);
 }
 
-/*function animate2() {
-    if (turn) angle += 0.01;
-    mesh.rotation.y = angle;
-
-    $("#angle").val(angle.toFixed(2));
-
-    controls.update();
-    requestAnimationFrame(animate);
-    render();
-}*/
 
 function render() {
+	renderer.clear();
     renderer.render(scene, camera);
+	renderer.render(sceneHUD, cameraHUD);
+	renderer.render(sceneCB, cameraCB);
 }
 </script>
 </body>

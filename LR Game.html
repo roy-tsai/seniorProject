@@ -18,6 +18,7 @@
 		float:left;
 		margin: 3px;
 	}
+
 	a {color: #00ffff}
 	strong {color:red}
 </style>
@@ -52,6 +53,39 @@
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
 
+<script src="js/Projector.js"></script>
+<script src="js/CanvasRenderer.js"></script>
+<script src="js/helvetiker_regular.typeface.js"></script>
+
+<script type="x-shader/x-vertex" id="vertexShaderDepth">
+    varying vec2 vUV;
+
+    void main() {
+        vUV = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+</script>
+<script type="x-shader/x-fragment" id="fragmentShaderDepth">
+    uniform sampler2D texture;
+    varying vec2 vUV;
+
+    vec4 pack_depth(const in float depth) {
+        const vec4 bit_shift = vec4(256.0 * 256.0 * 256.0, 256.0 * 256.0, 256.0, 1.0);
+        const vec4 bit_mask = vec4(0.0, 1.0 / 256.0, 1.0 / 256.0, 1.0 / 256.0);
+        vec4 res = fract(depth * bit_shift);
+        res -= res.xxyz * bit_mask;
+        return res;
+    }
+
+    void main() {
+        vec4 pixel = texture2D(texture, vUV);
+        if (pixel.a < 0.5) discard;
+        gl_FragData[0] = pack_depth(gl_FragCoord.z);
+    }
+</script>
+
+
+
 <script>
 
 var time = 0;
@@ -64,9 +98,12 @@ var angle_l = 0, angle_r = 0, angle = 0;
 var ChooseL = false, ChooseR = false, stop = true;
 var InLeft = false, InRight = false;
 var LR_Win = 0, LR_Lose = 0;
+var sceneHUD, cameraHUD;
 
 var theCanvasFrame;	
 var gramHistory = [], gramData = [];
+
+var group, text;
 
 theInit();	
 init();
@@ -86,7 +123,12 @@ function log()
 	winTemp = localStorage.getItem ("LR_Win");
 	loseTemp = localStorage.getItem ("LR_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
-	if( add == 0 )add = 1;
+	//console.log(add);
+	if( add == 0 ){
+		add = 1;
+		winTemp = 0;
+		loseTemp = 0;
+	}
 	WINS = (parseInt(winTemp)/add)*100;
 
 
@@ -97,12 +139,67 @@ function log()
 }
 
 function theInit(){
-	//clearlog();
 	for (var i = 0; i < 8; i++) gramData.push(0);
+}
+
+function initHUD() {
+    sceneHUD = new THREE.Scene();
+    cameraHUD = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
+    cameraHUD.position.z = 20;
+    cameraHUD.lookAt(new THREE.Vector3(0, 0, 0));
+
+	// Get text from hash
+
+	var theText, theText1 = "YOU WIN!!", theText2 = "YOU LOSE!!";
+	var textMaterial;
+	var hash = document.location.hash.substr( 1 );
+	
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xffff00, overdraw: 0.5 } );
+	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
+	
+	if(ChooseL == InLeft || ChooseR == InRight) {
+		textMaterial = textMaterial1;
+		theText = theText1;
+	}
+	else {
+		textMaterial = textMaterial2;
+		theText = theText2;
+	}
+	
+	if ( hash.length !== 0 ) {
+		theText = hash;
+	}
+
+	var text3d = new THREE.TextGeometry( theText, {
+
+		size: 8,
+		height: 5,
+		curveSegments: 2,
+		font: "helvetiker"
+
+	});
+
+	text3d.computeBoundingBox();
+	var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+	
+	text = new THREE.Mesh( text3d, textMaterial );
+
+	text.position.x = centerOffset;
+	text.position.y = 10;
+	text.position.z = 0;
+
+	group = new THREE.Group();
+	group.add( text );
+	
+	sceneHUD.add( group );
+	
 }
 
 
 function init() {
+
+	
 	angle_l = angle_r = 0;
     var theCanvas = document.getElementById("cnvs");
     theCanvasFrame = document.getElementById("container");	
@@ -131,8 +228,8 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera (45, ww/hh, 1, 10000);
 	camera.position.x = 0;
-	camera.position.y = 250;
-	camera.position.z = 350;
+	camera.position.y = 200;
+	camera.position.z = 300;
 	camera.lookAt (new THREE.Vector3(0,0,0));
 
 	light2();
@@ -149,6 +246,8 @@ function init() {
 
 	raycaster = new THREE.Raycaster();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+	
+	renderer.autoClear = false;
 
 }
 
@@ -200,25 +299,23 @@ function createMesh(geom, imageFile)
 	mat.map = texture;
 	mat.side = THREE.DoubleSide;
 	mat.transparent = true;
-
+	
 
 	var mesh = new THREE.Mesh(geom, mat);
-	mesh.castShadow = true;
-	mesh.receiveShadow = true;
-	return mesh;
-}
-
-function coinCreate(){
-
-	var coinTexture = new THREE.ImageUtils.loadTexture( 'image/coin.jpg' );
-	var coinMaterial = new THREE.MeshPhongMaterial( { map: coinTexture, side: THREE.DoubleSide } );
-	var coinGeometry = new THREE.CircleGeometry(5, 50);
-	coin = new THREE.Mesh(coinGeometry, coinMaterial);
+	mesh.customDepthMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            texture: {
+                type: 't',
+                value: texture
+            }
+        },
+        vertexShader: document.getElementById('vertexShaderDepth').textContent,
+        fragmentShader: document.getElementById('fragmentShaderDepth').textContent
+    });
 	
-	coin.castShadow = true;
-	coin.receiveShadow = true;
-	coin.position.set (0,0,2);
-
+	mesh.castShadow = true;
+	//mesh.receiveShadow = true;
+	return mesh;
 }
 
 
@@ -282,9 +379,6 @@ function ModeRandom(){
 	var x = Math.random();
 	if( x >= 0.5 ) InLeft = true;
 	else InRight = true;
-	
-	coinCreate();
-
 }
 
 function gramCollect(){
@@ -299,14 +393,6 @@ function gramCollect(){
 }
 
 function ModeGram(){
-	
-	var coinGeom = new THREE.CylinderGeometry (7,7,1,32);
-	var Texture = new THREE.ImageUtils.loadTexture( 'image/get.png' );
-	var coin = new THREE.Object3D();
-	coin.add(new THREE.Mesh (coinGeom, new THREE.MeshPhongMaterial( { map: Texture } )));
-	coin.translateOnAxis(new THREE.Vector3(0,0,-1), 20);
-	coin.rotation.x = Math.PI/2;
-	
 
 		if( gramHistory[0] == 0 ){
 			if( gramHistory[1] == 0 ){
@@ -325,48 +411,73 @@ function ModeGram(){
 			}
 		}
 
-	if (InLeft) {
-		left_ball.add( coin );
-	}
-	if (InRight) {
-		right_ball.add( coin );
-	}
+
 }
 
 
 function open(){
-	var mesh = createMesh( new THREE.CircleGeometry(35,40), "LC_P.png" );
-	left_ball = mesh;
-	left_ball.position.set (-40,30,0);
-	left_ball.rotation.x = Math.PI/2;
-	left_ball.name = "leftB";
-	scene.add (left_ball);
-
-
 	var mesh = createMesh( new THREE.CircleGeometry(35,40), "RC_P.png" );
-	right_ball = mesh;
-	right_ball.position.set (40,30,0);
-	right_ball.rotation.x = Math.PI/2;
-	right_ball.name = "rightB";
-	scene.add (right_ball);	
+	nleft_ball = mesh;
+	nleft_ball.position.set (-40,30,0);
+	nleft_ball.rotation.x = Math.PI/2;
+	nleft_ball.name = "nleftB";
 	
+	scene.add (nleft_ball);
+
+
+	var mesh = createMesh( new THREE.CircleGeometry(35,40), "LC_P.png" );
+	nright_ball = mesh;
+	nright_ball.position.set (40,30,0);
+	nright_ball.rotation.x = Math.PI/2;
+	nright_ball.name = "nrightB";
+	scene.add (nright_ball);	
+	
+	var mesh = createMesh( new THREE.CircleGeometry(5, 50), "coin.png" );
+	coin = mesh;
+	coin.position.set (0,0,-5);
+	
+	
+	
+	if(ChooseL){
 	if(InLeft){
-		left_ball.add( coin );		
+		nleft_ball.add( coin );		
 		localStorage.setItem ("LR_Win", ++LR_Win);
+		initHUD();
 		InLeft = false;
 				
 		turn = !turn;
 		$("#turn").html ("Start");
 	}
 	else{
-		right_ball.add( coin );	
+		nright_ball.add( coin );	
 		localStorage.setItem ("LR_Lose", ++LR_Lose);
-
+		initHUD();
+		InRight = false;
+		
 		turn = !turn;
 		$("#turn").html ("Start");
 	}
+	}
+	else if(ChooseR){
+	if(InLeft){
+		nleft_ball.add( coin );		
+		localStorage.setItem ("LR_Lose", ++LR_Lose);
+		initHUD();
+		InLeft = false;
+				
+		turn = !turn;
+		$("#turn").html ("Start");
+	}
+	else{
+		nright_ball.add( coin );	
+		localStorage.setItem ("LR_Win", ++LR_Win);
+		initHUD();
+		InRight = false;
 		
-	
+		turn = !turn;
+		$("#turn").html ("Start");
+	}
+	}	
 }
 
 
@@ -407,9 +518,10 @@ function animate()
 
 			gramHistory.push(0);
 			gramCollect();
+			open();
 			ChooseL = false;
 			
-			open();
+			
 		}
 
 	}
@@ -424,10 +536,11 @@ function animate()
 			scene.remove(right_ball);
 			
 			gramHistory.push(1);
-			gramCollect();	
+			gramCollect();
+			open();	
 			ChooseR = false;
 			
-			open();
+			
 		}
 		
 	}
@@ -458,19 +571,11 @@ function onWindowResize() {
 	renderer.setSize (ww,hh);
 }
 
-function animate2() {
-    if (turn) angle += 0.01;
-    mesh.rotation.y = angle;
-
-    $("#angle").val(angle.toFixed(2));
-
-    controls.update();
-    requestAnimationFrame(animate);
-    render();
-}
 
 function render() {
+	renderer.clear();
     renderer.render(scene, camera);
+	renderer.render(sceneHUD, cameraHUD);
 }
 </script>
 </body>

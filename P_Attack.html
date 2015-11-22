@@ -61,7 +61,7 @@ var mouse = new THREE.Vector2();
 
 var angle_l = 0, angle_r = 0;
 
-var Attack_Win = 0, Attack_Lost = 0;
+var Attack_Win = 0, Attack_Lose = 0;
 var M_choose = 100, H_choose = 100, C_choose = 0;
 var box_matR, box_matP, box_matDP, box_mat0, box_mat5, box_mat10,
 	box_mat15, box_mat20, box_matH, box_matM;
@@ -76,8 +76,8 @@ animate();
 function clearlog()
 {
 	localStorage.setItem ("Attack_Win", 0);
-	localStorage.setItem ("Attack_Lost", 0);
-	Attack_Win = Attack_Lost = 0;
+	localStorage.setItem ("Attack_Lose", 0);
+	Attack_Win = Attack_Lose = 0;
 	
 }
 
@@ -85,9 +85,13 @@ function log()
 {
 	var winTemp, loseTemp, WINS;
 	winTemp = localStorage.getItem ("Attack_Win");
-	loseTemp = localStorage.getItem ("Attack_Lost");
+	loseTemp = localStorage.getItem ("Attack_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
-	if( add == 0 )add = 1;
+	if( winTemp == null ){
+		add = 1;
+		winTemp = 0;
+		loseTemp = 0;
+	}
 	WINS = (parseInt(winTemp)/add)*100;
 
 
@@ -99,7 +103,6 @@ function log()
 }
 
 function theInit(){
-	//clearlog();
 	for (var i = 0; i < 27; i++) gramData.push(0);
 }
 
@@ -111,7 +114,7 @@ function init() {
 	//clearlog();
 	
 	Attack_Win = localStorage.getItem ("Attack_Win");
-	Attack_Lost = localStorage.getItem ("Attack_Lost");
+	Attack_Lose = localStorage.getItem ("Attack_Lose");
 
 
 	renderer = new THREE.WebGLRenderer({
@@ -482,7 +485,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -506,7 +509,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -526,7 +529,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -549,7 +552,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -569,7 +572,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -589,7 +592,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -612,7 +615,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -632,7 +635,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
@@ -656,7 +659,7 @@ function animate()
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Attack_Lost", ++Attack_Lost);
+				localStorage.setItem ("Attack_Lose", ++Attack_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
