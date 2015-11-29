@@ -19,9 +19,11 @@
 		margin: 3px;
 	}
 
+
 	a {color: #00ffff}
 	strong {color:red}
 </style>
+
 </head>
 
 <body> 
@@ -31,16 +33,18 @@
 <div id="container">
        <canvas id="cnvs"> </canvas>
 </div>
-<div style="float:left; margin-left: 10px; width:32vw;">
-    <button id="turn" style="width:100%">Start</button>
-	<br/>
-    <br/>
-	<form>
-		Random:<input type="radio" name="mode" id="R">
-		2-gram:<input type="radio" name="mode" id="N">
-		
-	</form>
-    <br/>
+
+
+<!-- ------------------------------------------------------------ -->
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="js/jquery-ui.js"></script>
+<link rel=stylesheet href="css/jquery-ui.css" />
+<link rel=stylesheet href="css/info.css"/>
+<script src="js/info.js"></script>
+<div id="infoButton"></div>
+<div id="infoBox" title="Game Information">
+
 	<p style="float:left; margin-left: 10px; width:32vw;">
 	Win:  	<input id="W" style="width:20%" type="text" value="None">
 	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
@@ -48,11 +52,24 @@
 	<br/>
     <br/>
 	<button id="clear" style="width:100%">Reset record</button>
+	<p id='result'></p>
 </div>
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<!-- ------------------------------------------------------------ -->
+
+<div style="float:left; margin-left: 10px; width:32vw;">
+	<button id="turn" style="width:100%">Start</button>
+	<br/>
+    <br/>	
+	<form>
+		Random:<input type="radio" name="mode" id="R" checked>
+		2-gram:<input type="radio" name="mode" id="N">
+		
+	</form>
+    
+ </div>
+
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
-
 <script src="js/Projector.js"></script>
 <script src="js/CanvasRenderer.js"></script>
 <script src="js/helvetiker_regular.typeface.js"></script>
@@ -88,14 +105,14 @@
 
 <script>
 
-var time = 0;
-var turn = false;
+var time = 0, count = 0;
+var WINS = 0;
 var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
 var left_ball, right_ball, coin;
 var angle_l = 0, angle_r = 0, angle = 0;
-var ChooseL = false, ChooseR = false, stop = true;
+var ChooseL = false, ChooseR = false, stop = true, turn = false;
 var InLeft = false, InRight = false;
 var LR_Win = 0, LR_Lose = 0;
 var sceneHUD, cameraHUD;
@@ -114,12 +131,13 @@ function clearlog()
 	localStorage.setItem ("LR_Win", 0);
 	localStorage.setItem ("LR_Lose", 0);
 	LR_Win = LR_Lose = 0;
+	count = 0;
 	
 }
 
 function log()
 {
-	var winTemp, loseTemp, WINS;
+	var winTemp, loseTemp;
 	winTemp = localStorage.getItem ("LR_Win");
 	loseTemp = localStorage.getItem ("LR_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
@@ -130,7 +148,6 @@ function log()
 		loseTemp = 0;
 	}
 	WINS = (parseInt(winTemp)/add)*100;
-
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
@@ -477,7 +494,23 @@ function open(){
 		turn = !turn;
 		$("#turn").html ("Start");
 	}
-	}	
+	}
+	log();
+	count++;
+	console.log(WINS.toFixed(2) + "..." + count);
+	
+	if( count == 5 ){
+		count = 0;
+		
+		$.get( "http://192.168.0.187:1337/api?argv="+ WINS.toFixed(2), function( data ) {
+			if(data && data.output){
+				$('#result').text(data.output);
+				console.log (data.output);
+			}		
+		});		
+	}
+	//count = 0;
+	
 }
 
 
@@ -500,7 +533,7 @@ function animate()
 		time = 0;
 		stop = !stop;
 		
-		if( document.getElementById("N").checked == true && (parseInt(LR_Win) + parseInt(LR_Lose)) >= 20 )
+		if( document.getElementById("N").checked == true && (parseInt(LR_Win) + parseInt(LR_Lose)) >= 2 )
 			ModeGram();
 		else
 			ModeRandom();

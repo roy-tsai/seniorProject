@@ -1,0 +1,13 @@
+{
+  "name": "caa-node-test",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "static-server" : "./node_modules/.bin/http-server",
+    "api-server" : "node main.js"
+  },
+  "dependencies": {
+    "localStorage": "*",
+    "http-server": "*"
+  }
+}
