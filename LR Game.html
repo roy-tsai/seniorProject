@@ -4,9 +4,10 @@
 <head>
 <style>
 	body {
-		background-color: #fff;
+		background-color: #888;
 		color: #111;
 		margin: 0px;
+		height: 60vw;
 		overflow: hidden;
 		font-family: Monospace;
 		font-size: 20px;
@@ -61,8 +62,8 @@
 	<br/>
     <br/>	
 	<form>
-		<input type="radio" name="mode" id="R" checked> Random
-		<input type="radio" name="mode" id="N"> 2-gram
+		<input type="radio" name="mode" id="R" > Random
+		<input type="radio" name="mode" id="N" checked> 2-gram
 		
 	</form>
     
@@ -142,7 +143,7 @@ function log()
 	loseTemp = localStorage.getItem ("LR_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
 	//console.log(add);
-	if( add == 0 ){
+	if( add == 0  || winTemp == null ){
 		add = 1;
 		winTemp = 0;
 		loseTemp = 0;
@@ -458,11 +459,17 @@ function nLB(){
 	nright_ball.name = "nrightB";
 		
 	
-	var coin_geom = new THREE.CylinderGeometry(5,5,1,32);
-	var coin_mat = new THREE.MeshPhongMaterial ({color: 0xeecc00});	
+	var coin_geom = new THREE.CylinderGeometry(5,5,1.2,32);
+	var coin_mat = new THREE.MeshPhongMaterial ({color: 0xffff00});	
 	coin = new THREE.Mesh (coin_geom, coin_mat);
-	coin.position.set (0,0,-1);
+	coin.position.set (0,0,-2);
 	coin.rotation.x = Math.PI/2;
+	var Scoin_geom = new THREE.CylinderGeometry(5.6,5.6,1,32);
+	var Scoin_mat = new THREE.MeshPhongMaterial ({color: 0x000000});	
+	Scoin = new THREE.Mesh (Scoin_geom, Scoin_mat);
+	//Scoin.position.set (0,0,-1);
+	//Scoin.rotation.x = Math.PI/2;
+	coin.add(Scoin);
 	
 }
 
@@ -612,9 +619,9 @@ function animate()
 	
 	
 	if (ChooseL) {
-		angle_l += 0.1;
-		angle_r -= 0.1;		
-		if (angle_l > Math.PI) {
+		//angle_l += 0.1;
+		//angle_r -= 0.1;		
+		//if (angle_l > Math.PI) {
 			Remind(0.1);
 			angle_l = angle_r = Math.PI;
 
@@ -624,13 +631,13 @@ function animate()
 			ChooseL = false;
 			
 			
-		}
+		//}
 	}
 	
 	if (ChooseR) {
-		angle_l += 0.1;
-		angle_r -= 0.1;		
-		if (angle_l > Math.PI) {
+		//angle_l += 0.1;
+		//angle_r -= 0.1;		
+		//if (angle_l > Math.PI) {
 			Remind(0.1);
 			angle_l = angle_r = Math.PI;
 			
@@ -640,7 +647,7 @@ function animate()
 			ChooseR = false;
 			
 			
-		}
+		//}
 	}
 	
 	if(i >= 5){

@@ -30,21 +30,39 @@
 <div id="container">
        <canvas id="cnvs"> </canvas>
 </div>
-<div style="float:left; margin-left: 10px; width:32vw;">Menu:
-    <button id="turn" style="width:100%">Start</button>
-	<br/>
-    <br/>
-	<button id="R-N" style="width:100%">Random</button>
-    <br/>
+<!-- ------------------------------------------------------------ -->
+
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="js/jquery-ui.js"></script>
+<link rel=stylesheet href="css/jquery-ui.css" />
+<link rel=stylesheet href="css/info.css"/>
+<script src="js/info.js"></script>
+<div id="infoButton"></div>
+<div id="infoBox" title="Game Information">
+
 	<p style="float:left; margin-left: 10px; width:32vw;">
 	Win:  	<input id="W" style="width:20%" type="text" value="None">
 	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
-	Wins:	<input id="WvsL" style="width:20%" type="text" value="None"></p>
+	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p>
 	<br/>
     <br/>
 	<button id="clear" style="width:100%">Reset record</button>
+	<p id='result'></p>
 </div>
-<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<!-- ------------------------------------------------------------ -->
+
+<div style="float:left; margin-left: 10px; width:32vw;">
+	<button id="turn" style="width:100%">Start</button>
+	<br/>
+    <br/>	
+	<form>
+		<input type="radio" name="mode" id="R" > Random
+		<input type="radio" name="mode" id="N" checked> 2-gram
+		
+	</form>
+    
+ </div>
+ 
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
 
@@ -56,9 +74,10 @@ var scene, renderer, camera, controls, raycaste;
 var mouse = new THREE.Vector2();
 
 var angle_l = 0, angle_r = 0;
-//var ChooseL = false, ChooseR = false, stop = true;
-var Win = 0, Lose = 0;
+
+var Defence_Win = 0, Defence_Lose = 0;
 var C_chooseM = 100, H_choose = 100, C_chooseH = 100;
+var box_matR, box_matP, box_matDP, box_matQ, box_matH;
 
 var theCanvasFrame;	
 var gramHistory_H = [], gramDataH = [];
@@ -69,25 +88,33 @@ animate();
 
 function clearlog()
 {
-	localStorage.setItem ("Win", 0);
-	localStorage.setItem ("Lose", 0);
-	Win = Lose = 0;
+	localStorage.setItem ("Defence_Win", 0);
+	localStorage.setItem ("Defence_Lose", 0);
+	Defence_Win = Defence_Lose = 0;
 	
 }
 
 function log()
 {
 	var winTemp, loseTemp, WINS;
-	winTemp = localStorage.getItem ("Win");
-	loseTemp = localStorage.getItem ("Lose");
+	winTemp = localStorage.getItem ("Defence_Win");
+	loseTemp = localStorage.getItem ("Defence_Lose");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
+	if( add == 0 || winTemp == null){
+		add = 1;
+		winTemp = 0;
+		loseTemp = 0;
+	}
 	WINS = (parseInt(winTemp)/add)*100;
+
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
-	$("#WvsL").val(WINS+"%");
+	$("#WvsL").val(WINS.toFixed(2));
 
+	
 }
+
 
 function theInit(){
 	for (var i = 0; i < 27; i++) gramDataH.push(0);
@@ -100,8 +127,8 @@ function init() {
 	
 	//clearlog();
 	
-	Win = localStorage.getItem ("Win");
-	Lose = localStorage.getItem ("Lose");
+	Defence_Win = localStorage.getItem ("Defence_Win");
+	Defence_Lose = localStorage.getItem ("Defence_Lose");
 
 
 	renderer = new THREE.WebGLRenderer({
@@ -168,15 +195,15 @@ $("#clear").click(function () {
 function P_Defence(){
 	var box_geom = new THREE.BoxGeometry (20,20,20);
 	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
-	var box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR});
+	box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR,transparent: true});
 	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var box_matP = new THREE.MeshPhongMaterial ({color: 0xdffffff,map: TextureP});
+	box_matP = new THREE.MeshPhongMaterial ({color: 0xdffffff,map: TextureP,transparent: true});
 	var TextureDP = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );
-	var box_matDP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureDP});
+	box_matDP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureDP,transparent: true});
 	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
-	var box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
+	box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
 	var TextureH = new THREE.ImageUtils.loadTexture( 'image/hand.jpg' );
-	var box_matH = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureH});
+	box_matH = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureH,transparent: true});
 	
 	C_BoxM = new THREE.Mesh (box_geom, box_matQ);
 	C_BoxM.position.set (-15,100,0);
@@ -190,7 +217,7 @@ function P_Defence(){
 	
 	//hand action
 	H_Box = new THREE.Mesh (box_geom, box_matH);
-	H_Box.position.set (-40,10,0);
+	H_Box.position.set (-45,10,0);
 	H_Box.name = "Hbox";
 	scene.add (H_Box);
 	
@@ -216,16 +243,19 @@ function P_Defence(){
 function whenChooseH(){
 
 	if( H_choose == 0 ){
-		P_Box.position.set (-40,10,-1);
-		DP_Box.position.set (-40,10,-1);
+		box_matR.opacity = 1;
+		box_matP.opacity = 0.1;
+		box_matDP.opacity = 0.1;
 	}
 	else if( H_choose == 5 ){
-		R_Box.position.set (-40,10,-1);
-		DP_Box.position.set (-40,10,-1);
+		box_matR.opacity = 0.1;
+		box_matP.opacity = 1;
+		box_matDP.opacity = 0.1;
 	}
 	else if( H_choose == 10 ){
-		R_Box.position.set (-40,10,-1);
-		P_Box.position.set (-40,10,-1);
+		box_matR.opacity = 0.1;
+		box_matP.opacity = 0.1;
+		box_matDP.opacity = 1;
 	}
 
 }
@@ -273,10 +303,27 @@ function ModeRandom(){
 	else if( x <= 0.6 && x > 0.4 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/10.jpg' );  C_chooseM = 10;}
 	else if( x <= 0.8 && x > 0.6 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/15.jpg' ); C_chooseM = 15;	}
 	else if( x > 0.8 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/20.jpg' );  C_chooseM = 20;}
+	
+	if( C_chooseM == 0 ){
+		TextureH = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_chooseH = 0;
+	}
+	else if( C_chooseM == 5 ){
+		if( y < 0.5 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_chooseH = 0;}
+		else { TextureH = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_chooseH = 5;}
+	}	
+	else if( C_chooseM == 10 ){
+		if( y <= 0.33 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_chooseH = 0;}
+		else if( y <= 0.66 && y > 0.33 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_chooseH = 5;}
+		else if( y > 0.66 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );  C_chooseH = 10;}
+	}
+	else if( C_chooseM == 15 ){
+		if( y < 0.5 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_chooseH = 5;}
+		else { TextureH = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );  C_chooseH = 10;}
+	}
+	else if( C_chooseM == 20 ){
+		TextureH = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );  C_chooseH = 10;
+	}
 
-	if( y <= 0.33 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_chooseH = 0;}
-	else if( y <= 0.66 && y > 0.33 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_chooseH = 5;}
-	else if( y > 0.66 ){ TextureH = new THREE.ImageUtils.loadTexture( 'image/Double_P.jpg' );  C_chooseH = 10;}
 	
 	var box_geom = new THREE.BoxGeometry (20,20,20);
 	var box_matM = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureM});
@@ -349,221 +396,173 @@ function ModeGram(){
 	C_Box.position.set (0,100,0);
 	scene.add (C_Box);
 	
-	if( Texture == TextureR )C_choose = 0;
-	else if( Texture == TextureP )C_choose = 5;
-	else if( Texture == TextureDP )C_choose = 10;
+	if( Texture == TextureR )C_chooseH = 0;
+	else if( Texture == TextureP )C_chooseH = 5;
+	else if( Texture == TextureDP )C_chooseH = 10;
 	
 }
 
 
 function animate()
-{
-	//if( gramHistory_H.length >= 2 ) 
-	//ModeGram();
-	//else 
-	//ModeRandom();
-			
+{		
 	
-	if ( C_chooseM == 0 ) {
-		if( H_choose == 0 ){
-			gramHistory_H.push(0);
-			gramCollect();					
-			
-			if( C_choose == 0 ){
-				localStorage.setItem ("Lose", ++Lose);
-				turn = !turn;
-				$("#turn").html ("Start");	
-			}
-			else{
-				localStorage.setItem ("Win", ++Win);
-				turn = !turn;
-				$("#turn").html ("Start");
-			}
-		}
-		else if( H_choose == 5 ){
-			gramHistory_H.push(5);
-			gramCollect();	
-			
-			localStorage.setItem ("Win", ++Win);
-			turn = !turn;
-			$("#turn").html ("Start");	
-		}
-		else if( H_choose == 10 ){
-			gramHistory_H.push(10);
-			gramCollect();	
-			
-			localStorage.setItem ("Win", ++Win);
-			turn = !turn;
-			$("#turn").html ("Start");	
-		}
+	if ( H_choose == 0 ) {
+		gramHistory_H.push(0);
+		gramCollect();	
 		
-	}
-	else if ( C_chooseM == 5 ) {
-		if( H_choose == 0 ){		
-			gramHistory_H.push(0);
-			gramCollect();					
-
-			if( C_choose == 5 ){
-				localStorage.setItem ("Lose", ++Lose);
-				turn = !turn;
-				$("#turn").html ("Start");	
-			}
-			else {
-				localStorage.setItem ("Win", ++Win);
-				turn = !turn;
-				$("#turn").html ("Start");
-			}
-		}
-		else if( H_choose == 5 ){
-			gramHistory_H.push(5);
-			gramCollect();					
-
-			if( C_choose == 0 ){
-				localStorage.setItem ("Lose", ++Lose);
+		//if( gramHistory_H.length >= 2 ) 
+		//ModeGram();
+		//else 
+		ModeRandom();
+	
+		if( C_chooseM == 0 ){	
+			if( C_chooseH == 0 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
 		}
-		else if( H_choose == 10 ){
-			gramHistory_H.push(10);
-			gramCollect();	
-		
-			localStorage.setItem ("Lose", ++Lose);
-			turn = !turn;
-			$("#turn").html ("Start");	
-		}		
-	}
-	else if ( C_chooseM == 10 ) {
-		if( H_choose == 0 ){		
-			gramHistory_H.push(0);
-			gramCollect();					
-			
-			if( C_choose == 10 ){
-				localStorage.setItem ("Lose", ++Lose);
+		else if( C_chooseM == 5 ){
+			if( C_chooseH == 5 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
 				turn = !turn;
 				$("#turn").html ("Start");
-			}
+			}	
 		}
-		else if( H_choose == 5 ){
-			gramHistory_H.push(5);
-			gramCollect();					
-		
-			if( C_choose == 5 ){
-				localStorage.setItem ("Lose", ++Lose);
+		else if( C_chooseM == 10 ){
+			if( C_chooseH == 10 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
 				turn = !turn;
 				$("#turn").html ("Start");
-			}
+			}		
 		}
-		else if( H_choose == 10 ){
-			gramHistory_H.push(10);
-			gramCollect();					
-			
-			if( C_choose == 0 ){
-				localStorage.setItem ("Lose", ++Lose);
-				turn = !turn;
-				$("#turn").html ("Start");	
-			}
-			else{
-				localStorage.setItem ("Win", ++Win);
-				turn = !turn;
-				$("#turn").html ("Start");
-			}
-		}
-	}
-	else if ( C_chooseM == 15 ) {
-		if( H_choose == 0 ){
-			gramHistory_H.push(0);
-			gramCollect();					
-
-			localStorage.setItem ("Win", ++Win);
-			turn = !turn;
-			$("#turn").html ("Start");
-			
-		}
-		else if( H_choose == 5 ){
-			gramHistory_H.push(5);
-			gramCollect();					
-		
-			if( C_choose == 10 ){
-				localStorage.setItem ("Lose", ++Lose);
-				turn = !turn;
-				$("#turn").html ("Start");	
-			}
-			else{
-				localStorage.setItem ("Win", ++Win);
-				turn = !turn;
-				$("#turn").html ("Start");
-			}
-		}
-		else if( H_choose == 10 ){
-			gramHistory_H.push(10);
-			gramCollect();					
-		
-			if( C_choose == 5 ){
-				localStorage.setItem ("Lose", ++Lose);
-				turn = !turn;
-				$("#turn").html ("Start");	
-			}
-			else{
-				localStorage.setItem ("Win", ++Win);
-				turn = !turn;
-				$("#turn").html ("Start");
-			}
-		}
-		
-	}
-	else if ( C_chooseM == 20 ) {
-		if( H_choose == 0 ){		
-			gramHistory_H.push(0);
-			gramCollect();					
-				
-			localStorage.setItem ("Win", ++Win);
+		else if( C_chooseM == 15 || C_chooseM == 20 ){
+			localStorage.setItem ("Defence_Win", ++Defence_Win);
 			turn = !turn;
 			$("#turn").html ("Start");
 		}
-		else if( H_choose == 5 ){
-			gramHistory_H.push(5);
-			gramCollect();					
-
-			localStorage.setItem ("Win", ++Win);
-			turn = !turn;
-			$("#turn").html ("Start");	
-		}
-		else if( H_choose == 10 ){
-			gramHistory_H.push(10);
-			gramCollect();					
+	}
+	if ( H_choose == 5 ) {
+		gramHistory_H.push(5);
+		gramCollect();						
 		
-			if( C_choose == 10 ){
-				localStorage.setItem ("Lose", ++Lose);
+		//if( gramHistory_H.length >= 2 ) 
+		//ModeGram();
+		//else 
+		ModeRandom();
+	
+		if( C_chooseM == 5 ){	
+			if( C_chooseH == 0 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
 				turn = !turn;
 				$("#turn").html ("Start");	
 			}
 			else{
-				localStorage.setItem ("Win", ++Win);
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
 				turn = !turn;
 				$("#turn").html ("Start");
 			}
-		}		
+		}
+		else if( C_chooseM == 10 ){
+			if( C_chooseH == 5 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				turn = !turn;
+				$("#turn").html ("Start");	
+			}
+			else{
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
+				turn = !turn;
+				$("#turn").html ("Start");
+			}	
+		}
+		else if( C_chooseM == 15 ){
+			if( C_chooseH == 10 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				turn = !turn;
+				$("#turn").html ("Start");	
+			}
+			else{
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
+				turn = !turn;
+				$("#turn").html ("Start");
+			}		
+		}
+		else if( C_chooseM == 0 || C_chooseM == 20 ){
+			localStorage.setItem ("Defence_Win", ++Defence_Win);
+			turn = !turn;
+			$("#turn").html ("Start");
+		}
+	}
+	if ( H_choose == 10 ) {
+		gramHistory_H.push(10);
+		gramCollect();						
+		
+		//if( gramHistory_H.length >= 2 ) 
+		//ModeGram();
+		//else 
+		ModeRandom();
+		
+		if( C_chooseM == 10 ){	
+			if( C_chooseH == 0 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				turn = !turn;
+				$("#turn").html ("Start");	
+			}
+			else{
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+		}
+		else if( C_chooseM == 15 ){
+			if( C_chooseH == 5 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				turn = !turn;
+				$("#turn").html ("Start");	
+			}
+			else{
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
+				turn = !turn;
+				$("#turn").html ("Start");
+			}	
+		}
+		else if( C_chooseM == 20 ){
+			if( C_chooseH == 10 ){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				turn = !turn;
+				$("#turn").html ("Start");	
+			}
+			else{
+				localStorage.setItem ("Defence_Win", ++Defence_Win);
+				turn = !turn;
+				$("#turn").html ("Start");
+			}		
+		}
+		else if( C_chooseM == 0 || C_chooseM == 5 ){
+			localStorage.setItem ("Defence_Win", ++Defence_Win);
+			turn = !turn;
+			$("#turn").html ("Start");
+		}
 	}
 
 	
 
-	H_choose = C_choose = 100;
+	H_choose = C_chooseH = 100;
 
 
 	requestAnimationFrame ( animate );  
