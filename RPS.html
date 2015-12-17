@@ -13,7 +13,7 @@
 		position: absolute;
 	}
 	#container {
-		width:60vw;
+		width:100vw;
 		height: 60vw;
 		float:left;
 		margin: 3px;
@@ -28,7 +28,24 @@
 <h1 style="text-align:center"> Project: RPS game </h1>
 <hr>
 <div id="container">
-       <canvas id="cnvs"> </canvas>
+	<div style="float:right; width:32vw; color:#ff0">
+		<button id="turn" style="width:50%">Start</button>
+		<br/>
+		<br/>
+		<form>
+			Random:<input type="radio" name="mode" id="R">
+			2-gram:<input type="radio" name="mode" id="N" checked>
+		</form>
+		<br/>
+		5 round:<br/>
+		Win:  	<input id="roundW" style="width:10%" type="text" value="None">
+		v.s   Lose:	<input id="roundL" style="width:10%" type="text" value="None">
+		<br/>
+		Draw:  	<input id="roundD" style="width:10%" type="text" value="None">
+		<br/>
+		Miss(too slow):	<input id="roundM" style="width:10%" type="text" value="None">
+	</div>
+    <canvas id="cnvs"> </canvas>
 </div>
 <!-- ------------------------------------------------------------ -->
 
@@ -52,16 +69,7 @@
 </div>
 <!-- ------------------------------------------------------------ -->
 
-<div style="float:left; margin-left: 10px; width:32vw;">
-    <button id="turn" style="width:100%">Start</button>
-	<br/>
-    <br/>
-	<form>
-		Random:<input type="radio" name="mode" id="R">
-		2-gram:<input type="radio" name="mode" id="N" checked>
-		
-	</form>
-</div>
+
 
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
@@ -69,17 +77,18 @@
 <script src="js/Projector.js"></script>
 <script src="js/CanvasRenderer.js"></script>
 <script src="js/helvetiker_regular.typeface.js"></script>
-
+<script src="http://jyunming-chen.github.io/webspeech/platform/platform.js"></script>
+<script src="http://jyunming-chen.github.io/webspeech/webspeech/src/webspeech.js"></script>
 
 <script>
 
-var check = false, turn = false;
-var T, temp;
+var check = false, turn = false, waitNext = false;
+var T, temp, temp2, R = 0, RoundCount = 0;
+
 var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
-var left_ball, right_ball;
-var angle_l = 0, angle_r = 0;
+var W = 0,L = 0,D = 0,M = 0;
 
 var RPS_Win = 0, RPS_Lose = 0, RPS_Draw = 0, RPS_Miss = 0;
 var P_choose = 100, C_choose = 0;
@@ -96,6 +105,47 @@ theInit();
 init();
 animate();
 
+
+
+
+$("#turn").click(function () {
+	turn = !turn;
+	W = L = D = M = 0;
+	Round();
+	
+	if (turn){
+        $("#turn").html ("Game Time!");
+	}
+	else{
+        $("#turn").html ("Start");
+	}
+});
+
+
+$("#clear").click(function () {
+   clearlog();
+});
+
+
+function Round(){
+	//console.log(turn);
+	if(RoundCount == 5){
+		turn = !turn;
+		$("#turn").html ("Start");
+		RoundCount = 0;
+	}	
+	else if(turn){
+
+		RoundCount++;	
+		stop = !stop;
+		T = new Date();
+		temp = T.getTime();
+		init();
+    }
+}
+
+
+
 function clearlog()
 {
 	localStorage.setItem ("RPS_Win", 0);
@@ -103,6 +153,18 @@ function clearlog()
 	localStorage.setItem ("RPS_Lose", 0);
 	localStorage.setItem ("RPS_Miss", 0);
 	RPS_Win = RPS_Draw = RPS_Lose = RPS_Miss = 0;
+	
+}
+
+function Roundlog(){
+	if(M == 2){
+		L++;
+		M = 0;
+	}
+	$("#roundW").val(W);
+	$("#roundL").val(L);
+	$("#roundD").val(D);
+	$("#roundM").val(M);
 	
 }
 
@@ -129,15 +191,17 @@ function log()
 	$("#D").val(drawTemp);
 	$("#Miss").val(MisTemp);
 	$("#WvsL").val(WINS.toFixed(2));
-
+	
+	Roundlog();
 }
 
 function theInit(){
 	for (var i = 0; i < 27; i++) gramData.push(0);
+	
 }
 
 
-function initHUD() {
+function Info_Perform(switchM) {
     sceneHUD = new THREE.Scene();
     cameraHUD = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
     cameraHUD.position.z = 20;
@@ -145,23 +209,39 @@ function initHUD() {
 
 	// Get text from hash
 
-	var theText, theText1 = "YOU WIN!!", theText2 = "YOU LOSE!!", theText3 = "Too Slow!!";
+	var theText, theText1 = "YOU WIN!!", theText2 = "YOU LOSE!!", theText3 = "Too Slow!!", theText4 = "Draw", theText5 = " ";
 	var textMaterial;
 	var hash = document.location.hash.substr( 1 );
 	
-	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xffff00, overdraw: 0.5 } );
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0x00ff00, overdraw: 0.5 } );
 	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
 	var textMaterial3 = new THREE.MeshBasicMaterial( { color:0xaa00aa, overdraw: 0.5 } );
-	
-	//if(ChooseL == InLeft || ChooseR == InRight) {
-		textMaterial = textMaterial3;
-		theText = theText3;
-	/*}
-	else {
+	var textMaterial4 = new THREE.MeshBasicMaterial( { color:0xffff00, overdraw: 0.5 } );
+
+	if(switchM == 0){
+		textMaterial = textMaterial4;
+		theText = theText4;
+
+
+
+	}
+	if(switchM == 1){
+		textMaterial = textMaterial1;
+		theText = theText1;
+
+	}
+	if(switchM == 2){
 		textMaterial = textMaterial2;
 		theText = theText2;
-	}*/
 
+	}
+	if(switchM == 0.1){
+		textMaterial = textMaterial3;
+		theText = theText3;
+		
+	}
+
+	
 	if ( hash.length !== 0 ) {
 		theText = hash;
 	}
@@ -189,7 +269,7 @@ function initHUD() {
 	group.add( text );
 	
 	sceneHUD.add( group );
-	
+
 }
 
 function countBack() {
@@ -200,33 +280,52 @@ function countBack() {
 
 	// Get text from hash
 
-	var theText, theText1 = "1", theText2 = "2", theText3 = "3", theText4 = "GO!", theText5 = "";
+	var theText, theText1 = "Scissor", theText2 = "Paper", theText3 = "Rock", theText4 = "Shoot!", theText5 = "";
 	var textMaterial;
 	var hash = document.location.hash.substr( 1 );
 	
 	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
 	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff9900, overdraw: 0.5 } );
 
+	textMaterial = textMaterial1;
+	theText = theText5;	
 	
-	if(T <= temp+1050) {
+	var speaker = new RobotSpeaker();
+	var countS = 0;	
+	
+	
+	if(temp <= T && T <= temp+550) {
 		textMaterial = textMaterial2;
 		theText = theText3;
+		if(countS == 0){
+			countS++
+			speaker.speak("en",theText );
+		}
 	}
-	if(temp+1050 < T && T <= temp+2050) {
+	else if(temp+550 < T && T <= temp+1050) {
 		textMaterial = textMaterial2;
 		theText = theText2;
+		if(countS == 1){
+			countS++
+			speaker.speak("en",theText );
+		}
 	}
-	if(temp+2050 < T && T <= temp+3050) {
+	else if(temp+1050 < T && T <= temp+1550) {
 		textMaterial = textMaterial2;
 		theText = theText1;
+		if(countS == 2){
+			countS++
+			speaker.speak("en",theText );
+		}
 	}
-	if(temp+3050 < T && T <= temp+4050) {
+	else if(temp+1550 < T && T <= temp+1850) {
 		textMaterial = textMaterial1;
 		theText = theText4;
-	} 
-	if(temp+4050 < T) {
-		textMaterial = textMaterial1;
-		theText = theText5;
+		temp2 = T.getTime();
+		if(countS == 3){
+			countS++
+			speaker.speak("en",theText );
+		}
 	} 
 
 
@@ -263,7 +362,7 @@ function countBack() {
 
 
 function init() {
-	//initHUD();
+
 	
     var theCanvas = document.getElementById("cnvs");
     theCanvasFrame = document.getElementById("container");	
@@ -311,26 +410,6 @@ function init() {
 	renderer.autoClear = false;
 
 }
-
-$("#turn").click(function () {
-	turn = !turn;
-	stop = !stop;
-	T = new Date();
-	temp = T.getTime();
-	init();
-    if (turn){
-        $("#turn").html ("Game Time!");
-	}
-	else{
-        $("#turn").html ("Start");
-	}
-});
-
-
-$("#clear").click(function () {
-   clearlog();
-});
-
 
 
 
@@ -500,7 +579,7 @@ function onDocumentMouseDown( event ) {
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 	var intersects = raycaster.intersectObjects( scene.children );
 	if ( intersects.length > 0 ) {
-		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose(); check = true;}
+		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose(); check = true; }
 		else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose(); check = true;}
 		else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose(); check = true;}
 	}
@@ -586,40 +665,55 @@ function ModeGram(){
 	
 }
 
+function tooSlow() {
+		
+	if(T > temp+1550 && check == true){
+		
+		temp = temp+20000;
+		countBack();
+		if( (T.getTime()-temp2) > 300 ){
+			P_choose = 100;
+			check = false;
+			Info_Perform(0.1);
+			waitNext = true;
+			RoundCount--;
+			localStorage.setItem ("RPS_Miss", ++RPS_Miss);
+			var MisTemp = localStorage.getItem ("RPS_Miss"); M++;
+			if( MisTemp == 2){
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
+				localStorage.setItem ("RPS_Miss", 0);
+				RPS_Miss = 0;
+			}
+		}
+		T = 0;
+		temp2 = 0;
+		stop = !stop;		
+		
+		
+	}
+	
+}
 
 function animate()
-{
-	
+{	
+	if(!waitNext){
+		Idle = new Date();
+		tempI = Idle.getTime();
+	}
 	//count back
-	if(T <= temp+4100 && !stop){
+	if(T <= temp+1850 && !stop){
 		T = new Date();
 		countBack();
-		//console.log(time);
+		
 	}
-	else if(T > temp+4100 && T <= temp+6050 && check == false){
+	else if(T > temp+1850 && check == false){
 		T = new Date();
 	}
-	else if(T > temp+4100 && T < temp+6050 && check == true){
-		T = 0;
-		stop = !stop;
-	}
-	else if(T > temp+6050 && check == false){
-		stop = !stop;
-		T = 0;
-		localStorage.setItem ("RPS_Miss", ++RPS_Miss);
-		var MisTemp = localStorage.getItem ("RPS_Miss");
-		if( MisTemp == 2){
-			localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-			localStorage.setItem ("RPS_Miss", 0);
-			RPS_Miss = 0;
-		}
-		initHUD();
-		turn = !turn;
-		$("#turn").html ("Start");
-	}
+	tooSlow();
 
 	
 	if ( P_choose == 0 ) {
+	waitNext = true;
 			check = false;
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
@@ -628,28 +722,23 @@ function animate()
 			gramHistory.push(0);
 			gramCollect();
 			if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
-				
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				Info_Perform(0);
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				Info_Perform(1);
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				Info_Perform(2);
 			}
 
 			
 
 	}
 	else if ( P_choose == 1 ) {
+	waitNext = true;	
 			check = false;	
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
@@ -657,25 +746,20 @@ function animate()
 			gramHistory.push(1);
 			gramCollect();
 			if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
-			
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				Info_Perform(0);
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				Info_Perform(1);
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				Info_Perform(2);
 			}			
 	}	
 	else if ( P_choose == 2 ) {
+	waitNext = true;
 			check = false;
 			if( gramHistory.length >= 2 ) 
 			ModeGram();
@@ -683,22 +767,16 @@ function animate()
 			gramHistory.push(2);
 			gramCollect();
 			if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw);
-				
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				Info_Perform(0);
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				Info_Perform(1);
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose);
-
-				turn = !turn;
-				$("#turn").html ("Start");
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				Info_Perform(2);
 			}			
 	}
 
@@ -708,6 +786,14 @@ function animate()
 	requestAnimationFrame ( animate );  
 	update();
 	render(); 
+	
+	if(waitNext){
+		Idle = new Date();
+		if(Idle >= tempI+1000 ){
+			Round();
+			waitNext = false;
+		}
+	}
 }
 
 function update()
