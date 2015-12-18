@@ -18,6 +18,11 @@
 		float:left;
 		margin: 3px;
 	}
+	#info {
+		float:right;
+		width:32vw;
+		color:#ff0
+	}
 	a {color: #00ffff}
 	strong {color:red}
 </style>
@@ -28,24 +33,22 @@
 <h1 style="text-align:center"> Project: RPS game </h1>
 <hr>
 <div id="container">
-	<div style="float:right; width:32vw; color:#ff0">
+
+	<div id="info">
 		<button id="turn" style="width:50%">Start</button>
-		<br/>
-		<br/>
 		<form>
 			Random:<input type="radio" name="mode" id="R">
-			2-gram:<input type="radio" name="mode" id="N" checked>
+			2-gram:<input type="radio" name="mode" id="N" >
+			Exp:<input type="radio" name="mode" id="E" checked>
 		</form>
-		<br/>
 		5 round:<br/>
 		Win:  	<input id="roundW" style="width:10%" type="text" value="None">
 		v.s   Lose:	<input id="roundL" style="width:10%" type="text" value="None">
-		<br/>
 		Draw:  	<input id="roundD" style="width:10%" type="text" value="None">
 		<br/>
 		Miss(too slow):	<input id="roundM" style="width:10%" type="text" value="None">
 	</div>
-    <canvas id="cnvs"> </canvas>
+	<canvas id="cnvs"> </canvas>  
 </div>
 <!-- ------------------------------------------------------------ -->
 
@@ -89,6 +92,7 @@ var scene, renderer, camera, controls, raycaste;
 var mouse = new THREE.Vector2();
 
 var W = 0,L = 0,D = 0,M = 0;
+var expC = 0, expP = 0;
 
 var RPS_Win = 0, RPS_Lose = 0, RPS_Draw = 0, RPS_Miss = 0;
 var P_choose = 100, C_choose = 0;
@@ -290,42 +294,42 @@ function countBack() {
 	textMaterial = textMaterial1;
 	theText = theText5;	
 	
-	var speaker = new RobotSpeaker();
-	var countS = 0;	
+	//var speaker = new RobotSpeaker();
+	//var countS = 0;	
 	
 	
 	if(temp <= T && T <= temp+550) {
 		textMaterial = textMaterial2;
 		theText = theText3;
-		if(countS == 0){
+		/*if(countS == 0){
 			countS++
 			speaker.speak("en",theText );
-		}
+		}*/
 	}
 	else if(temp+550 < T && T <= temp+1050) {
 		textMaterial = textMaterial2;
 		theText = theText2;
-		if(countS == 1){
+		/*if(countS == 1){
 			countS++
 			speaker.speak("en",theText );
-		}
+		}*/
 	}
 	else if(temp+1050 < T && T <= temp+1550) {
 		textMaterial = textMaterial2;
 		theText = theText1;
-		if(countS == 2){
+		/*if(countS == 2){
 			countS++
 			speaker.speak("en",theText );
-		}
+		}*/
 	}
 	else if(temp+1550 < T && T <= temp+1850) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
-		if(countS == 3){
+		/*if(countS == 3){
 			countS++
 			speaker.speak("en",theText );
-		}
+		}*/
 	} 
 
 
@@ -388,8 +392,8 @@ function init() {
 
 	camera = new THREE.PerspectiveCamera (45, ww/hh, 1, 10000);
 	camera.position.x = 0;
-	camera.position.y = 60;
-	camera.position.z = 400;
+	camera.position.y = 80;
+	camera.position.z = 500;
 	camera.lookAt (new THREE.Vector3(0,0,0));
 
 	
@@ -601,6 +605,60 @@ function ModeRandom(){
 
 }
 
+function ModeExp(){
+	var Texture;
+	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
+	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
+	console.log(expC);
+	//expC: 0 = draw, 1 = win, 2 = lose
+	if( expP == 0 ){
+		if( expC == 0 ){
+			Texture = TextureP;
+		}
+		else if( expC == 1 ){
+			Texture = TextureP;
+		}
+		else if( expC == 2 ){
+			Texture = TextureR;
+		}
+	}
+	else if( expP == 1 ){
+		if( expC == 0 ){
+			Texture = TextureS;
+		}
+		else if( expC == 1 ){
+			Texture = TextureS;
+		}
+		else if( expC == 2 ){
+			Texture = TextureP;
+		}		
+	}
+	else if( expP == 2 ){
+		if( expC == 0 ){
+			Texture = TextureR;
+		}
+		else if( expC == 1 ){
+			Texture = TextureR;
+		}
+		else if( expC == 2 ){
+			Texture = TextureS;
+		}		
+	}
+	
+	box_geom = new THREE.BoxGeometry (30,30,30);
+	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	C_Box = new THREE.Mesh (box_geom, box_mat);
+	C_Box.position.set (0,100,0);
+	scene.add (C_Box);
+	
+	if( Texture == TextureR )C_choose = 0;
+	else if( Texture == TextureP )C_choose = 1;
+	else if( Texture == TextureS )C_choose = 2;
+	
+}
+
+
 function gramCollect(){
 	
 	if(gramHistory.length > 2){
@@ -714,70 +772,79 @@ function animate()
 	
 	if ( P_choose == 0 ) {
 	waitNext = true;
-			check = false;
-			if( gramHistory.length >= 2 ) 
-			ModeGram();
+			check = false; 
+			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
 			else ModeRandom();
-
+			if(  document.getElementById("E").checked == true ) ModeExp();
+			if(  document.getElementById("R").checked == true ) ModeRandom();
+			
 			gramHistory.push(0);
 			gramCollect();
 			if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;
 				Info_Perform(0);
+				
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++; expC = 1;
 				Info_Perform(1);
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++; expC = 2;
 				Info_Perform(2);
 			}
-
+			expP = 0;
 			
 
 	}
 	else if ( P_choose == 1 ) {
 	waitNext = true;	
 			check = false;	
-			if( gramHistory.length >= 2 ) 
-			ModeGram();
+			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
 			else ModeRandom();
+			if(  document.getElementById("E").checked == true ) ModeExp();
+			if(  document.getElementById("R").checked == true ) ModeRandom();
+			
 			gramHistory.push(1);
 			gramCollect();
 			if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;
 				Info_Perform(0);
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++; expC = 1
 				Info_Perform(1);
 			}
 			else if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++; expC = 2;
 				Info_Perform(2);
-			}			
+			}	
+			expP = 1;
 	}	
 	else if ( P_choose == 2 ) {
 	waitNext = true;
-			check = false;
-			if( gramHistory.length >= 2 ) 
-			ModeGram();
+			check = false; 
+			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
 			else ModeRandom();
+			if(  document.getElementById("E").checked == true ) ModeExp();
+			if(  document.getElementById("R").checked == true ) ModeRandom();
+
+			
 			gramHistory.push(2);
 			gramCollect();
 			if( C_choose == 2 ){
-				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++;
+				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;
 				Info_Perform(0);
 			}
 			else if( C_choose == 1 ){
-				localStorage.setItem ("RPS_Win", ++RPS_Win); W++;
+				localStorage.setItem ("RPS_Win", ++RPS_Win); W++; expC = 1;
 				Info_Perform(1);
 			}
 			else if( C_choose == 0 ){
-				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++;
+				localStorage.setItem ("RPS_Lose", ++RPS_Lose); L++; expC = 2;
 				Info_Perform(2);
-			}			
+			}
+			expP = 2;
 	}
 
 	WLperform();
