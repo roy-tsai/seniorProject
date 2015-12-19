@@ -37,13 +37,13 @@
 	<div id="info">
 		<button id="turn" style="width:50%">Start</button>
 		<form>
-			Random:<input type="radio" name="mode" id="R">
-			2-gram:<input type="radio" name="mode" id="N" >
-			Exp:<input type="radio" name="mode" id="E" checked>
+			<input type="radio" name="mode" id="R">Random
+			<input type="radio" name="mode" id="N" >2-gram
+			<input type="radio" name="mode" id="E" checked>Exp
 		</form>
 		5 round:<br/>
 		Win:  	<input id="roundW" style="width:10%" type="text" value="None">
-		v.s   Lose:	<input id="roundL" style="width:10%" type="text" value="None">
+		vs.   Lose:	<input id="roundL" style="width:10%" type="text" value="None">
 		Draw:  	<input id="roundD" style="width:10%" type="text" value="None">
 		<br/>
 		Miss(too slow):	<input id="roundM" style="width:10%" type="text" value="None">
@@ -104,7 +104,8 @@ var gramHistory = [], gramData = [];
 
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
-
+var speaker = new RobotSpeaker();
+var countS = 0;	
 theInit();	
 init();
 animate();
@@ -294,42 +295,41 @@ function countBack() {
 	textMaterial = textMaterial1;
 	theText = theText5;	
 	
-	//var speaker = new RobotSpeaker();
-	//var countS = 0;	
+
 	
 	
-	if(temp <= T && T <= temp+550) {
+	if(temp <= T && T <= temp+1050) {
 		textMaterial = textMaterial2;
 		theText = theText3;
-		/*if(countS == 0){
+		if(countS == 0){
 			countS++
 			speaker.speak("en",theText );
-		}*/
+		}
 	}
-	else if(temp+550 < T && T <= temp+1050) {
+	else if(temp+1050 < T && T <= temp+2050) {
 		textMaterial = textMaterial2;
 		theText = theText2;
-		/*if(countS == 1){
+		if(countS == 1){
 			countS++
 			speaker.speak("en",theText );
-		}*/
+		}
 	}
-	else if(temp+1050 < T && T <= temp+1550) {
+	else if(temp+2050 < T && T <= temp+3050) {
 		textMaterial = textMaterial2;
 		theText = theText1;
-		/*if(countS == 2){
+		if(countS == 2){
 			countS++
 			speaker.speak("en",theText );
-		}*/
+		}
 	}
-	else if(temp+1550 < T && T <= temp+1850) {
+	else if(temp+3050 < T && T <= temp+4050) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
-		/*if(countS == 3){
+		if(countS == 3){
 			countS++
 			speaker.speak("en",theText );
-		}*/
+		}
 	} 
 
 
@@ -759,7 +759,7 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+1850 && !stop){
+	if(T <= temp+4050 && !stop){
 		T = new Date();
 		countBack();
 		
