@@ -38,7 +38,8 @@
 		<button id="turn" style="width:50%">Start</button>
 		<form>
 			<input type="radio" name="mode" id="R">Random
-			<input type="radio" name="mode" id="N" >2-gram
+			<input type="radio" name="mode" id="2N" >2-gram
+			<input type="radio" name="mode" id="3N" >3-gram
 			<input type="radio" name="mode" id="E" checked>Exp
 		</form>
 		5 round:<br/>
@@ -80,8 +81,8 @@
 <script src="js/Projector.js"></script>
 <script src="js/CanvasRenderer.js"></script>
 <script src="js/helvetiker_regular.typeface.js"></script>
-<script src="webspeech-master/platform/platform.js"></script>
-<script src="webspeech-master/webspeech/src/webspeech.js"></script>
+<!--<script src="webspeech-master/platform/platform.js"></script>
+<script src="webspeech-master/webspeech/src/webspeech.js"></script>-->
 
 <script>
 
@@ -100,12 +101,19 @@ var box_matR, box_matP, box_matS, box_mat;
 var box_geomR, box_geomP, box_geomS, box_geom;
 
 var theCanvasFrame;	
-var gramHistory = [], gramData = [];
+var TwoGramHistory = [], TwoGramData = [];
+var ThreeGramHistory = [], ThreeGramData = [];
 
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
-var speaker = new RobotSpeaker();
+//var speaker = new RobotSpeaker();
 var countS = 0;	
+
+	
+var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
+var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
+
 theInit();	
 init();
 animate();
@@ -201,7 +209,8 @@ function log()
 }
 
 function theInit(){
-	for (var i = 0; i < 27; i++) gramData.push(0);
+	for (var i = 0; i < 27; i++) TwoGramData.push(0);
+	for (var i = 0; i < 81; i++) ThreeGramData.push(0);
 	
 }
 
@@ -298,37 +307,38 @@ function countBack() {
 
 	
 	
-	if(temp <= T && T <= temp+1050) {
+	if(temp <= T && T <= temp+550) {
 		textMaterial = textMaterial2;
 		theText = theText3;
 		if(countS == 0){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1050 < T && T <= temp+2050) {
+	else if(temp+550 < T && T <= temp+1050) {
 		textMaterial = textMaterial2;
 		theText = theText2;
 		if(countS == 1){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+2050 < T && T <= temp+3050) {
+	else if(temp+1050 < T && T <= temp+1550) {
 		textMaterial = textMaterial2;
 		theText = theText1;
 		if(countS == 2){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+3050 < T && T <= temp+4050) {
+	else if(temp+1550 < T && T <= temp+1850) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
 		if(countS == 3){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
+			countS = 0;
 		}
 	} 
 
@@ -423,12 +433,9 @@ function RPS(){
 	box_geomP = new THREE.BoxGeometry (30,30,30);
 	box_geomS = new THREE.BoxGeometry (30,30,30);
 	box_geom = new THREE.BoxGeometry (30,30,30);
-	
-	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+
 	box_matR = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureR,transparent: true});
-	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
 	box_matP = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureP,transparent: true});
-	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
 	box_matS = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureS,transparent: true});
 	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
 	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
@@ -607,10 +614,7 @@ function ModeRandom(){
 
 function ModeExp(){
 	var Texture;
-	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
-	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
-	console.log(expC);
+
 	//expC: 0 = draw, 1 = win, 2 = lose
 	if( expP == 0 ){
 		if( expC == 0 ){
@@ -661,53 +665,175 @@ function ModeExp(){
 
 function gramCollect(){
 	
-	if(gramHistory.length > 2){
-		++gramData[gramHistory[0] * 9 + gramHistory[1] * 3 + gramHistory[2]];
-		console.log(gramHistory);
-		gramHistory.shift();
-		
-		console.log(gramData);
-	 }
+	if(TwoGramHistory.length > 2){
+		++TwoGramData[TwoGramHistory[0] * 9 + TwoGramHistory[1] * 3 + TwoGramHistory[2]];
+		//console.log(TwoGramHistory);
+		TwoGramHistory.shift();
+	}
+	if(ThreeGramHistory.length > 3){
+		++ThreeGramData[ThreeGramHistory[0] * 27 + ThreeGramHistory[1] * 9 + ThreeGramHistory[2] * 3 + ThreeGramHistory[3] ];
+		//console.log(ThreeGramHistory);
+		ThreeGramHistory.shift();
+	}
 }
 
-function ModeGram(){
+function Mode2Gram(){
 	
 	var Texture;
-	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
-	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
-	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
 
-	if( gramHistory[0] == 0 ){
-		if( gramHistory[1] == 0 ){
-			gramData[0] >= gramData[1] ? ( gramData[0] >= gramData[2] ? Texture = TextureP : Texture = TextureR ) : ( gramData[1] >= gramData[2] ? Texture = TextureS : Texture = TextureR );
+	if( TwoGramHistory[0] == 0 ){
+		if( TwoGramHistory[1] == 0 ){
+			TwoGramData[0] >= TwoGramData[1] ? ( TwoGramData[0] >= TwoGramData[2] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[1] >= TwoGramData[2] ? Texture = TextureS : Texture = TextureR );
 		}
-		else if( gramHistory[1] == 1 ){
-			gramData[3] >= gramData[4] ? ( gramData[3] >= gramData[5] ? Texture = TextureP : Texture = TextureR ) : ( gramData[4] >= gramData[5] ? Texture = TextureS : Texture = TextureR );
+		else if( TwoGramHistory[1] == 1 ){
+			TwoGramData[3] >= TwoGramData[4] ? ( TwoGramData[3] >= TwoGramData[5] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[4] >= TwoGramData[5] ? Texture = TextureS : Texture = TextureR );
 		}
-		else if( gramHistory[1] == 2 ){
-			gramData[6] >= gramData[7] ? ( gramData[6] >= gramData[8] ? Texture = TextureP : Texture = TextureR ) : ( gramData[7] >= gramData[8] ? Texture = TextureS : Texture = TextureR );
-		}
-	}
-	else if( gramHistory[0] == 1 ){
-		if( gramHistory[1] == 0 ){
-			gramData[9] >= gramData[10] ? ( gramData[9] >= gramData[11] ? Texture = TextureP : Texture = TextureR ) : ( gramData[10] >= gramData[11] ? Texture = TextureS : Texture = TextureR );
-		}
-		else if( gramHistory[1] == 1 ){
-			gramData[12] >= gramData[13] ? ( gramData[12] >= gramData[14] ? Texture = TextureP : Texture = TextureR ) : ( gramData[13] >= gramData[14] ? Texture = TextureS : Texture = TextureR );
-		}
-		else if( gramHistory[1] == 2 ){
-			gramData[15] >= gramData[16] ? ( gramData[15] >= gramData[17] ? Texture = TextureP : Texture = TextureR ) : ( gramData[16] >= gramData[17] ? Texture = TextureS : Texture = TextureR );
+		else if( TwoGramHistory[1] == 2 ){
+			TwoGramData[6] >= TwoGramData[7] ? ( TwoGramData[6] >= TwoGramData[8] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[7] >= TwoGramData[8] ? Texture = TextureS : Texture = TextureR );
 		}
 	}
-	else if( gramHistory[0] == 2 ){
-		if( gramHistory[1] == 0 ){
-			gramData[18] >= gramData[19] ? ( gramData[18] >= gramData[20] ? Texture = TextureP : Texture = TextureR ) : ( gramData[19] >= gramData[20] ? Texture = TextureS : Texture = TextureR );
+	else if( TwoGramHistory[0] == 1 ){
+		if( TwoGramHistory[1] == 0 ){
+			TwoGramData[9] >= TwoGramData[10] ? ( TwoGramData[9] >= TwoGramData[11] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[10] >= TwoGramData[11] ? Texture = TextureS : Texture = TextureR );
 		}
-		else if( gramHistory[1] == 1 ){
-			gramData[21] >= gramData[22] ? ( gramData[21] >= gramData[23] ? Texture = TextureP : Texture = TextureR ) : ( gramData[22] >= gramData[23] ? Texture = TextureS : Texture = TextureR );
+		else if( TwoGramHistory[1] == 1 ){
+			TwoGramData[12] >= TwoGramData[13] ? ( TwoGramData[12] >= TwoGramData[14] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[13] >= TwoGramData[14] ? Texture = TextureS : Texture = TextureR );
 		}
-		else if( gramHistory[1] == 2 ){
-			gramData[24] >= gramData[25] ? ( gramData[24] >= gramData[26] ? Texture = TextureP : Texture = TextureR ) : ( gramData[25] >= gramData[26] ? Texture = TextureS : Texture = TextureR );
+		else if( TwoGramHistory[1] == 2 ){
+			TwoGramData[15] >= TwoGramData[16] ? ( TwoGramData[15] >= TwoGramData[17] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[16] >= TwoGramData[17] ? Texture = TextureS : Texture = TextureR );
+		}
+	}
+	else if( TwoGramHistory[0] == 2 ){
+		if( TwoGramHistory[1] == 0 ){
+			TwoGramData[18] >= TwoGramData[19] ? ( TwoGramData[18] >= TwoGramData[20] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[19] >= TwoGramData[20] ? Texture = TextureS : Texture = TextureR );
+		}
+		else if( TwoGramHistory[1] == 1 ){
+			TwoGramData[21] >= TwoGramData[22] ? ( TwoGramData[21] >= TwoGramData[23] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[22] >= TwoGramData[23] ? Texture = TextureS : Texture = TextureR );
+		}
+		else if( TwoGramHistory[1] == 2 ){
+			TwoGramData[24] >= TwoGramData[25] ? ( TwoGramData[24] >= TwoGramData[26] ? Texture = TextureP : Texture = TextureR ) : ( TwoGramData[25] >= TwoGramData[26] ? Texture = TextureS : Texture = TextureR );
+		}
+	}
+	
+	box_geom = new THREE.BoxGeometry (30,30,30);
+	box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	C_Box = new THREE.Mesh (box_geom, box_mat);
+	C_Box.position.set (0,100,0);
+	scene.add (C_Box);
+	
+	if( Texture == TextureR )C_choose = 0;
+	else if( Texture == TextureP )C_choose = 1;
+	else if( Texture == TextureS )C_choose = 2;
+	
+}
+
+function Mode3Gram(){
+	
+	var Texture;
+
+	if( ThreeGramHistory[0] == 0 ){
+		if( ThreeGramHistory[1] == 0 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[0] >= ThreeGramData[1] ? ( ThreeGramData[0] >= ThreeGramData[2] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[1] >= ThreeGramData[2] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[3] >= ThreeGramData[4] ? ( ThreeGramData[3] >= ThreeGramData[5] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[4] >= ThreeGramData[5] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[6] >= ThreeGramData[7] ? ( ThreeGramData[6] >= ThreeGramData[8] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[7] >= ThreeGramData[8] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 1 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[9] >= ThreeGramData[10] ? ( ThreeGramData[9] >= ThreeGramData[11] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[10] >= ThreeGramData[11] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[12] >= ThreeGramData[13] ? ( ThreeGramData[12] >= ThreeGramData[14] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[13] >= ThreeGramData[14] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[15] >= ThreeGramData[16] ? ( ThreeGramData[15] >= ThreeGramData[17] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[16] >= ThreeGramData[17] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 2 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[18] >= ThreeGramData[19] ? ( ThreeGramData[18] >= ThreeGramData[20] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[19] >= ThreeGramData[20] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[21] >= ThreeGramData[22] ? ( ThreeGramData[21] >= ThreeGramData[23] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[22] >= ThreeGramData[23] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[24] >= ThreeGramData[25] ? ( ThreeGramData[24] >= ThreeGramData[26] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[25] >= ThreeGramData[26] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+	}
+	else if( ThreeGramHistory[0] == 1 ){
+		if( ThreeGramHistory[1] == 0 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[27] >= ThreeGramData[28] ? ( ThreeGramData[27] >= ThreeGramData[29] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[28] >= ThreeGramData[29] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[30] >= ThreeGramData[31] ? ( ThreeGramData[30] >= ThreeGramData[32] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[31] >= ThreeGramData[32] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[33] >= ThreeGramData[34] ? ( ThreeGramData[33] >= ThreeGramData[35] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[34] >= ThreeGramData[35] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 1 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[36] >= ThreeGramData[37] ? ( ThreeGramData[36] >= ThreeGramData[38] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[37] >= ThreeGramData[38] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[39] >= ThreeGramData[40] ? ( ThreeGramData[39] >= ThreeGramData[41] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[40] >= ThreeGramData[41] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[42] >= ThreeGramData[43] ? ( ThreeGramData[42] >= ThreeGramData[44] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[43] >= ThreeGramData[44] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 2 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[45] >= ThreeGramData[46] ? ( ThreeGramData[45] >= ThreeGramData[47] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[46] >= ThreeGramData[47] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[48] >= ThreeGramData[49] ? ( ThreeGramData[48] >= ThreeGramData[50] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[49] >= ThreeGramData[50] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[51] >= ThreeGramData[52] ? ( ThreeGramData[51] >= ThreeGramData[53] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[52] >= ThreeGramData[53] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+	}
+	else if( ThreeGramHistory[0] == 2 ){
+		if( ThreeGramHistory[1] == 0 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[54] >= ThreeGramData[55] ? ( ThreeGramData[54] >= ThreeGramData[56] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[55] >= ThreeGramData[56] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[57] >= ThreeGramData[58] ? ( ThreeGramData[57] >= ThreeGramData[59] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[58] >= ThreeGramData[59] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[60] >= ThreeGramData[61] ? ( ThreeGramData[60] >= ThreeGramData[62] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[61] >= ThreeGramData[62] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 1 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[63] >= ThreeGramData[64] ? ( ThreeGramData[63] >= ThreeGramData[65] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[64] >= ThreeGramData[65] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[66] >= ThreeGramData[67] ? ( ThreeGramData[66] >= ThreeGramData[68] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[67] >= ThreeGramData[68] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[69] >= ThreeGramData[70] ? ( ThreeGramData[69] >= ThreeGramData[71] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[70] >= ThreeGramData[71] ? Texture = TextureS : Texture = TextureR );
+			}
+		}
+		else if( ThreeGramHistory[1] == 2 ){
+			if( ThreeGramHistory[2] == 0 ){
+				ThreeGramData[72] >= ThreeGramData[73] ? ( ThreeGramData[72] >= ThreeGramData[74] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[73] >= ThreeGramData[74] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 1 ){
+				ThreeGramData[75] >= ThreeGramData[76] ? ( ThreeGramData[75] >= ThreeGramData[77] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[76] >= ThreeGramData[77] ? Texture = TextureS : Texture = TextureR );
+			}
+			else if( ThreeGramHistory[2] == 2 ){
+				ThreeGramData[78] >= ThreeGramData[79] ? ( ThreeGramData[78] >= ThreeGramData[80] ? Texture = TextureP : Texture = TextureR ) : ( ThreeGramData[79] >= ThreeGramData[80] ? Texture = TextureS : Texture = TextureR );
+			}
 		}
 	}
 	
@@ -759,7 +885,7 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+4050 && !stop){
+	if(T <= temp+1850 && !stop){
 		T = new Date();
 		countBack();
 		
@@ -773,12 +899,15 @@ function animate()
 	if ( P_choose == 0 ) {
 	waitNext = true;
 			check = false; 
-			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
+			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
+			else ModeRandom();
+			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
 			else ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 			
-			gramHistory.push(0);
+			TwoGramHistory.push(0);
+			ThreeGramHistory.push(0);
 			gramCollect();
 			if( C_choose == 0 ){
 				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;
@@ -800,12 +929,15 @@ function animate()
 	else if ( P_choose == 1 ) {
 	waitNext = true;	
 			check = false;	
-			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
+			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
+			else ModeRandom();
+			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
 			else ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 			
-			gramHistory.push(1);
+			TwoGramHistory.push(1);
+			ThreeGramHistory.push(1);
 			gramCollect();
 			if( C_choose == 1 ){
 				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;
@@ -824,13 +956,16 @@ function animate()
 	else if ( P_choose == 2 ) {
 	waitNext = true;
 			check = false; 
-			if(  document.getElementById("N").checked == true && gramHistory.length >= 2 )  ModeGram();
+			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
+			else ModeRandom();
+			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
 			else ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 
 			
-			gramHistory.push(2);
+			TwoGramHistory.push(2);
+			ThreeGramHistory.push(2);
 			gramCollect();
 			if( C_choose == 2 ){
 				localStorage.setItem ("RPS_Draw", ++RPS_Draw); D++; expC = 0;

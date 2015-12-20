@@ -4,7 +4,7 @@
 <head>
 <style>
 	body {
-		background-color: #fff;
+		background-color: #888;
 		color: #111;
 		margin: 0px;
 		overflow: hidden;
@@ -13,10 +13,15 @@
 		position: absolute;
 	}
 	#container {
-		width:60vw;
+		width:100vw;
 		height: 60vw;
 		float:left;
 		margin: 3px;
+	}
+	#info {
+		float:right;
+		width:32vw;
+		color:#ff0
 	}
 	a {color: #00ffff}
 	strong {color:red}
@@ -28,7 +33,15 @@
 <h1 style="text-align:center"> Project: P_Defence game </h1>
 <hr>
 <div id="container">
-       <canvas id="cnvs"> </canvas>
+	<div id="info">
+		<button id="turn" style="width:50%">Start</button>
+		<br/>
+		<form>
+		<input type="radio" name="mode" id="R" > Random
+		<input type="radio" name="mode" id="N" checked> 2-gram	
+		</form>  
+	</div>
+    <canvas id="cnvs"> </canvas>
 </div>
 <!-- ------------------------------------------------------------ -->
 
@@ -51,17 +64,7 @@
 </div>
 <!-- ------------------------------------------------------------ -->
 
-<div style="float:left; margin-left: 10px; width:32vw;">
-	<button id="turn" style="width:100%">Start</button>
-	<br/>
-    <br/>	
-	<form>
-		<input type="radio" name="mode" id="R" > Random
-		<input type="radio" name="mode" id="N" checked> 2-gram
-		
-	</form>
-    
- </div>
+
  
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
