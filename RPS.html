@@ -18,8 +18,16 @@
 		float:left;
 		margin: 3px;
 	}
-	#info {
-		float:right;
+	#RoundInfo {
+		position:absolute;
+		right:10px;
+		width:32vw;
+		color:#ff0
+	}
+	#radioChoose {
+		position:absolute;
+		top:50%;
+		left:10%;
 		width:32vw;
 		color:#ff0
 	}
@@ -34,20 +42,23 @@
 <hr>
 <div id="container">
 
-	<div id="info">
-		<button id="turn" style="width:50%">Start</button>
-		<form>
-			<input type="radio" name="mode" id="R">Random
-			<input type="radio" name="mode" id="2N" >2-gram
-			<input type="radio" name="mode" id="3N" >3-gram
-			<input type="radio" name="mode" id="E" checked>Exp
-		</form>
+	<div id="RoundInfo">
+		<button id="turn" style="width:50%">Start</button><br/>
 		5 round:<br/>
 		Win:  	<input id="roundW" style="width:10%" type="text" value="None">
-		vs.   Lose:	<input id="roundL" style="width:10%" type="text" value="None">
+		vs.   Lose:	<input id="roundL" style="width:10%" type="text" value="None"><br/>
 		Draw:  	<input id="roundD" style="width:10%" type="text" value="None">
 		<br/>
 		Miss(too slow):	<input id="roundM" style="width:10%" type="text" value="None">
+	</div>
+	<div id="radioChoose">
+		Mode Choose:<br/>
+		<form>
+			<input type="radio" name="mode" id="R">Random<br/>
+			<input type="radio" name="mode" id="2N" >2-gram<br/>
+			<input type="radio" name="mode" id="3N" >3-gram<br/>
+			<input type="radio" name="mode" id="E" checked>Exp
+		</form>
 	</div>
 	<canvas id="cnvs"> </canvas>  
 </div>
@@ -81,8 +92,8 @@
 <script src="js/Projector.js"></script>
 <script src="js/CanvasRenderer.js"></script>
 <script src="js/helvetiker_regular.typeface.js"></script>
-<!--<script src="webspeech-master/platform/platform.js"></script>
-<script src="webspeech-master/webspeech/src/webspeech.js"></script>-->
+<script src="webspeech-master/platform/platform.js"></script>
+<script src="webspeech-master/webspeech/src/webspeech.js"></script>
 
 <script>
 
@@ -106,7 +117,7 @@ var ThreeGramHistory = [], ThreeGramData = [];
 
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
-//var speaker = new RobotSpeaker();
+var speaker = new RobotSpeaker();
 var countS = 0;	
 
 	
@@ -188,7 +199,7 @@ function log()
 	drawTemp = localStorage.getItem ("RPS_Draw");
 	loseTemp = localStorage.getItem ("RPS_Lose");
 	MisTemp = localStorage.getItem ("RPS_Miss");
-	var add = parseInt(winTemp) + parseInt(drawTemp) + parseInt(loseTemp);
+	var add = parseInt(winTemp) + parseInt(loseTemp);
 	if( add == 0 || winTemp == null ){
 		add = 1;
 		winTemp = 0;
@@ -307,37 +318,37 @@ function countBack() {
 
 	
 	
-	if(temp <= T && T <= temp+550) {
+	if(temp <= T && T <= temp+600) {
 		textMaterial = textMaterial2;
 		theText = theText3;
 		if(countS == 0){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+550 < T && T <= temp+1050) {
+	else if(temp+600 < T && T <= temp+1200) {
 		textMaterial = textMaterial2;
 		theText = theText2;
 		if(countS == 1){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1050 < T && T <= temp+1550) {
+	else if(temp+1200 < T && T <= temp+1800) {
 		textMaterial = textMaterial2;
 		theText = theText1;
 		if(countS == 2){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1550 < T && T <= temp+1850) {
+	else if(temp+1800 < T && T <= temp+2200) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
 		if(countS == 3){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 			countS = 0;
 		}
 	} 
@@ -590,11 +601,12 @@ function onDocumentMouseDown( event ) {
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 	var intersects = raycaster.intersectObjects( scene.children );
 	if ( intersects.length > 0 ) {
-		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose(); check = true; }
-		else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose(); check = true;}
-		else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose(); check = true;}
+		if(T > temp+1800){
+			if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose(); check = true; }
+			else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose(); check = true;}
+			else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose(); check = true;}
+		}
 	}
-	
 }
 
 function ModeRandom(){
@@ -624,7 +636,7 @@ function ModeExp(){
 			Texture = TextureP;
 		}
 		else if( expC == 2 ){
-			Texture = TextureR;
+			Texture = TextureS;
 		}
 	}
 	else if( expP == 1 ){
@@ -635,7 +647,7 @@ function ModeExp(){
 			Texture = TextureS;
 		}
 		else if( expC == 2 ){
-			Texture = TextureP;
+			Texture = TextureR;
 		}		
 	}
 	else if( expP == 2 ){
@@ -646,7 +658,7 @@ function ModeExp(){
 			Texture = TextureR;
 		}
 		else if( expC == 2 ){
-			Texture = TextureS;
+			Texture = TextureP;
 		}		
 	}
 	
@@ -851,7 +863,7 @@ function Mode3Gram(){
 
 function tooSlow() {
 		
-	if(T > temp+1550 && check == true){
+	if(T > temp+1800 && check == true){
 		
 		temp = temp+20000;
 		countBack();
@@ -885,12 +897,12 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+1850 && !stop){
+	if(T <= temp+2200 && !stop){
 		T = new Date();
 		countBack();
 		
 	}
-	else if(T > temp+1850 && check == false){
+	else if(T > temp+2200 && check == false){
 		T = new Date();
 	}
 	tooSlow();
@@ -991,7 +1003,7 @@ function animate()
 	
 	if(waitNext){
 		Idle = new Date();
-		if(Idle >= tempI+1000 ){
+		if(Idle >= tempI+1200 ){
 			Round();
 			waitNext = false;
 		}
