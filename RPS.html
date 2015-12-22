@@ -117,7 +117,7 @@ var ThreeGramHistory = [], ThreeGramData = [];
 
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
-var speaker = new RobotSpeaker();
+//var speaker = new RobotSpeaker();
 var countS = 0;	
 
 	
@@ -273,8 +273,8 @@ function Info_Perform(switchM) {
 
 	var text3d = new THREE.TextGeometry( theText, {
 
-		size: 8,
-		height: 5,
+		size: 5,
+		height: 8,
 		curveSegments: 2,
 		font: "helvetiker"
 
@@ -287,7 +287,7 @@ function Info_Perform(switchM) {
 	text = new THREE.Mesh( text3d, textMaterial );
 
 	text.position.x = centerOffset;
-	text.position.y = 10;
+	text.position.y = 20;
 	text.position.z = 0;
 
 	group = new THREE.Group();
@@ -323,7 +323,7 @@ function countBack() {
 		theText = theText3;
 		if(countS == 0){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
 	else if(temp+750 < T && T <= temp+1500) {
@@ -331,7 +331,7 @@ function countBack() {
 		theText = theText2;
 		if(countS == 1){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
 	else if(temp+1500 < T && T <= temp+2250) {
@@ -339,16 +339,16 @@ function countBack() {
 		theText = theText1;
 		if(countS == 2){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+2250 < T && T <= temp+2550) {
+	else if(temp+2250 < T && T <= temp+3000) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
 		if(countS == 3){
 			countS++
-			speaker.speak("en",theText );
+			//speaker.speak("en",theText );
 			countS = 0;
 		}
 	} 
@@ -360,7 +360,7 @@ function countBack() {
 
 	var text3d = new THREE.TextGeometry( theText, {
 
-		size: 8,
+		size: 5,
 		height: 5,
 		curveSegments: 2,
 		font: "helvetiker"
@@ -867,7 +867,7 @@ function tooSlow() {
 		
 		temp = temp+20000;
 		countBack();
-		if( (T.getTime()-temp2) > 300 ){
+		if( (T.getTime()-temp2) > 750 ){
 			P_choose = 100;
 			check = false;
 			Info_Perform(0.1);
@@ -897,12 +897,12 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+2550 && !stop){
+	if(T <= temp+3000 && !stop){
 		T = new Date();
 		countBack();
 		
 	}
-	else if(T > temp+2550 && check == false){
+	else if(T > temp+3000 && check == false){
 		T = new Date();
 	}
 	tooSlow();
@@ -1003,7 +1003,7 @@ function animate()
 	
 	if(waitNext){
 		Idle = new Date();
-		if(Idle >= tempI+1200 ){
+		if(Idle >= tempI+1500 ){
 			Round();
 			waitNext = false;
 		}
