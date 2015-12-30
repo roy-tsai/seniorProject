@@ -103,7 +103,7 @@ var T, temp, temp2, R = 0, RoundCount = 0;
 var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
-var W = 0,L = 0,D = 0,M = 0;
+var W = 0,L = 0,D = 0,M = 0,count = 0;
 var expC = 0, expP = 0;
 
 var RPS_Win = 0, RPS_Lose = 0, RPS_Draw = 0, RPS_Miss = 0;
@@ -118,7 +118,7 @@ var ThreeGramHistory = [], ThreeGramData = [];
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
 //var speaker = new RobotSpeaker();
-var countS = 0;	
+var countS = 0,WINS = 0,add = 0;	
 
 	
 var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
@@ -153,7 +153,7 @@ $("#clear").click(function () {
 
 function Round(){
 	//console.log(turn);
-	if(RoundCount == 5){
+	if(RoundCount == 100){
 		turn = !turn;
 		$("#turn").html ("Start");
 		RoundCount = 0;
@@ -194,12 +194,12 @@ function Roundlog(){
 
 function log()
 {
-	var winTemp, drawTemp, loseTemp, MisTemp, WINS;
+	var drawTemp, MisTemp, winTemp, loseTemp;
 	winTemp = localStorage.getItem ("RPS_Win");
 	drawTemp = localStorage.getItem ("RPS_Draw");
 	loseTemp = localStorage.getItem ("RPS_Lose");
 	MisTemp = localStorage.getItem ("RPS_Miss");
-	var add = parseInt(winTemp) + parseInt(loseTemp);
+	add = parseInt(winTemp) + parseInt(loseTemp);
 	if( add == 0 || winTemp == null ){
 		add = 1;
 		winTemp = 0;
@@ -294,6 +294,22 @@ function Info_Perform(switchM) {
 	group.add( text );
 	
 	sceneHUD.add( group );
+	
+	
+	
+	log();
+	count++;
+
+	if( count == 5 ){
+		count = 0;
+		
+		$.get( "http://192.168.0.187:1337/api?argv="+ WINS.toFixed(2), function( data ) {
+			if(data && data.output){
+				$('#result').text(data.output);
+				console.log (data.output);
+			}		
+		});		
+	}
 
 }
 
@@ -318,7 +334,7 @@ function countBack() {
 
 	
 	
-	if(temp <= T && T <= temp+750) {
+	if(temp <= T && T <= temp+400) {
 		textMaterial = textMaterial2;
 		theText = theText3;
 		if(countS == 0){
@@ -326,7 +342,7 @@ function countBack() {
 			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+750 < T && T <= temp+1500) {
+	else if(temp+400 < T && T <= temp+800) {
 		textMaterial = textMaterial2;
 		theText = theText2;
 		if(countS == 1){
@@ -334,7 +350,7 @@ function countBack() {
 			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1500 < T && T <= temp+2250) {
+	else if(temp+1200 < T && T <= temp+1600) {
 		textMaterial = textMaterial2;
 		theText = theText1;
 		if(countS == 2){
@@ -342,7 +358,7 @@ function countBack() {
 			//speaker.speak("en",theText );
 		}
 	}
-	else if(temp+2250 < T && T <= temp+3000) {
+	else if(temp+1600 < T && T <= temp+2000) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
@@ -582,6 +598,8 @@ function WLperform(){
 			scene.add (C_Box);
 		}			
 	}
+	
+
 }
 
 
@@ -732,7 +750,7 @@ function Mode2Gram(){
 	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
 	scene.add (C_Box);
-	
+
 	if( Texture == TextureR )C_choose = 0;
 	else if( Texture == TextureP )C_choose = 1;
 	else if( Texture == TextureS )C_choose = 2;
@@ -863,7 +881,7 @@ function Mode3Gram(){
 
 function tooSlow() {
 		
-	if(T > temp+2250 && check == true){
+	if(T > temp+1600 && check == true){
 		
 		temp = temp+20000;
 		countBack();
@@ -897,24 +915,24 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+3000 && !stop){
+	if(T <= temp+2000 && !stop){
 		T = new Date();
 		countBack();
 		
 	}
-	else if(T > temp+3000 && check == false){
+	else if(T > temp+2000 && check == false){
 		T = new Date();
 	}
 	tooSlow();
-
+	
 	
 	if ( P_choose == 0 ) {
-	waitNext = true;
+	waitNext = true;  
 			check = false; 
-			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
-			else ModeRandom();
-			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
-			else ModeRandom();
+			if(  document.getElementById("2N").checked == true && add >= 2 )  Mode2Gram();
+			else if(  document.getElementById("2N").checked == true && add < 2 ) ModeRandom();
+			if(  document.getElementById("3N").checked == true && add >= 3 )  Mode3Gram();
+			else if(  document.getElementById("3N").checked == true && add < 3 ) ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 			
@@ -941,10 +959,10 @@ function animate()
 	else if ( P_choose == 1 ) {
 	waitNext = true;	
 			check = false;	
-			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
-			else ModeRandom();
-			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
-			else ModeRandom();
+			if(  document.getElementById("2N").checked == true && add >= 2 )  Mode2Gram();
+			else if(  document.getElementById("2N").checked == true && add < 2 ) ModeRandom();
+			if(  document.getElementById("3N").checked == true && add >= 3 )  Mode3Gram();
+			else if(  document.getElementById("3N").checked == true && add < 3 ) ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 			
@@ -968,10 +986,10 @@ function animate()
 	else if ( P_choose == 2 ) {
 	waitNext = true;
 			check = false; 
-			if(  document.getElementById("2N").checked == true && TwoGramHistory.length >= 2 )  Mode2Gram();
-			else ModeRandom();
-			if(  document.getElementById("3N").checked == true && ThreeGramHistory.length >= 3 )  Mode3Gram();
-			else ModeRandom();
+			if(  document.getElementById("2N").checked == true && add >= 2 )  Mode2Gram();
+			else if(  document.getElementById("2N").checked == true && add < 2 ) ModeRandom();
+			if(  document.getElementById("3N").checked == true && add >= 3 )  Mode3Gram();
+			else if(  document.getElementById("3N").checked == true && add < 3 ) ModeRandom();
 			if(  document.getElementById("E").checked == true ) ModeExp();
 			if(  document.getElementById("R").checked == true ) ModeRandom();
 

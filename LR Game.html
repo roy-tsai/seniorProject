@@ -427,18 +427,18 @@ function ModeGram(){
 
 		if( gramHistory[0] == 0 ){
 			if( gramHistory[1] == 0 ){
-				gramData[0] > gramData[1] ? InRight = true : InLeft = true;
+				gramData[0] >= gramData[1] ? InRight = true : InLeft = true;
 			}
 			else{
-				gramData[2] > gramData[3] ? InRight = true : InLeft = true;
+				gramData[2] >= gramData[3] ? InRight = true : InLeft = true;
 			}
 		}
 		else if( gramHistory[0] == 1 ){
 			if( gramHistory[1] == 0 ){
-				gramData[4] > gramData[5] ? InRight = true : InLeft = true;
+				gramData[4] >= gramData[5] ? InRight = true : InLeft = true;
 			}
 			else{
-				gramData[6] > gramData[7] ? InRight = true : InLeft = true;
+				gramData[6] >= gramData[7] ? InRight = true : InLeft = true;
 			}
 		}
 
@@ -548,7 +548,7 @@ function open(Result){
 		}	
 		localStorage.setItem ("LR_Win", ++LR_Win);
 		Remind(1);
-		InLeft = false;
+		InRight = false;
 				
 		turn = !turn;
 		$("#turn").html ("Start");
