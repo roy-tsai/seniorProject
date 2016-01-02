@@ -81,6 +81,7 @@
 	Miss(too slow):	<input id="Miss" style="width:10%" type="text" value="None"></p>
     <br/><br/>
 	<button id="clear" style="width:100%">Reset record</button>
+	<p id='result'></p>
 </div>
 <!-- ------------------------------------------------------------ -->
 
@@ -153,7 +154,7 @@ $("#clear").click(function () {
 
 function Round(){
 	//console.log(turn);
-	if(RoundCount == 100){
+	if(RoundCount == 5){
 		turn = !turn;
 		$("#turn").html ("Start");
 		RoundCount = 0;
