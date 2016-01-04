@@ -118,7 +118,7 @@ var ThreeGramHistory = [], ThreeGramData = [];
 
 var sceneCB, cameraCB, sceneHUD, cameraHUD;
 var group, text;
-//var speaker = new RobotSpeaker();
+var speaker = new RobotSpeaker();
 var countS = 0,WINS = 0,add = 0;	
 
 	
@@ -335,37 +335,37 @@ function countBack() {
 
 	
 	
-	if(temp <= T && T <= temp+400) {
+	if(temp <= T && T <= temp+750) {
 		textMaterial = textMaterial2;
 		theText = theText3;
 		if(countS == 0){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+400 < T && T <= temp+800) {
+	else if(temp+750 < T && T <= temp+1500) {
 		textMaterial = textMaterial2;
 		theText = theText2;
 		if(countS == 1){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1200 < T && T <= temp+1600) {
+	else if(temp+1500 < T && T <= temp+2250) {
 		textMaterial = textMaterial2;
 		theText = theText1;
 		if(countS == 2){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1600 < T && T <= temp+2000) {
+	else if(temp+2250 < T && T <= temp+3000) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
 		if(countS == 3){
 			countS++
-			//speaker.speak("en",theText );
+			speaker.speak("en",theText );
 			countS = 0;
 		}
 	} 
@@ -882,7 +882,7 @@ function Mode3Gram(){
 
 function tooSlow() {
 		
-	if(T > temp+1600 && check == true){
+	if(T > temp+2250 && check == true){
 		
 		temp = temp+20000;
 		countBack();
@@ -916,12 +916,12 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+2000 && !stop){
+	if(T <= temp+3000 && !stop){
 		T = new Date();
 		countBack();
 		
 	}
-	else if(T > temp+2000 && check == false){
+	else if(T > temp+3000 && check == false){
 		T = new Date();
 	}
 	tooSlow();
