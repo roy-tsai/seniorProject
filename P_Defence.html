@@ -57,7 +57,8 @@
 	<p style="float:left; margin-left: 10px; width:32vw;">
 	Win:  	<input id="W" style="width:20%" type="text" value="None">
 	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
-	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p>
+	Winning:	<input id="WvsL" style="width:10%" type="text" value="None">%</p><br/>
+	Miss(too slow):	<input id="Miss" style="width:10%" type="text" value="None"></p>
 	<br/>
     <br/>
 	<button id="clear" style="width:100%">Reset record</button>
@@ -70,18 +71,30 @@
 <script src="js/r69/three.min.js"></script>
 <script src="js/OrbitControls.js"></script>
 
+<script src="js/Projector.js"></script>
+<script src="js/CanvasRenderer.js"></script>
+<script src="js/helvetiker_regular.typeface.js"></script>
+<script src="webspeech-master/platform/platform.js"></script>
+<script src="webspeech-master/webspeech/src/webspeech.js"></script>
+
 <script>
 
 var time = 0;
-var turn = false, P_choose = false;
+var check = false, turn = false, P_choose = false;
 var scene, renderer, camera, controls, raycaste;   
 var mouse = new THREE.Vector2();
 
-var angle_l = 0, angle_r = 0;
+var T, temp, temp2;
 
-var Defence_Win = 0, Defence_Lose = 0;
+var Defence_Win = 0, Defence_Lose = 0, Defence_Miss = 0;
 var C_chooseM = 100, H_choose = 100, C_chooseH = 100;
 var box_matR, box_matP, box_matDP, box_matQ, box_matH;
+
+var sceneCB, cameraCB, sceneHUD, cameraHUD;
+var group, text;
+var speaker = new RobotSpeaker();
+var countS = 0;
+var Stext, Stext1 = "Zero", Stext2 = "five", Stext3 = "ten", Stext4 = "fifteen", Stext5 = "twenty"; 
 
 var theCanvasFrame;	
 var gramHistory_H = [], gramDataH = [];
@@ -94,35 +107,201 @@ function clearlog()
 {
 	localStorage.setItem ("Defence_Win", 0);
 	localStorage.setItem ("Defence_Lose", 0);
-	Defence_Win = Defence_Lose = 0;
+	localStorage.setItem ("Defence_Miss", 0);
+	Defence_Win = Defence_Lose = Defence_Miss = 0;
 	
 }
 
 function log()
 {
-	var winTemp, loseTemp, WINS;
+	var winTemp, MisTemp, loseTemp, WINS;
 	winTemp = localStorage.getItem ("Defence_Win");
 	loseTemp = localStorage.getItem ("Defence_Lose");
+	MisTemp = localStorage.getItem ("Defence_Miss");
 	var add = parseInt(winTemp) + parseInt(loseTemp);
 	if( add == 0 || winTemp == null){
 		add = 1;
 		winTemp = 0;
 		loseTemp = 0;
+		MisTemp = 0;
 	}
 	WINS = (parseInt(winTemp)/add)*100;
 
 
 	$("#W").val(winTemp);
 	$("#L").val(loseTemp);
+	$("#Miss").val(MisTemp);
 	$("#WvsL").val(WINS.toFixed(2));
 
-	
 }
 
 
 function theInit(){
 	for (var i = 0; i < 27; i++) gramDataH.push(0);
 }
+
+function Info_Perform(switchM) {
+    sceneHUD = new THREE.Scene();
+    cameraHUD = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
+    cameraHUD.position.z = 20;
+    cameraHUD.lookAt(new THREE.Vector3(0, 0, 0));
+
+	// Get text from hash
+
+	var theText, theText1 = "YOU WIN!!", theText2 = "YOU LOSE!!", theText3 = "Too Slow!!", theText4 = "Draw", theText5 = " ";
+	var textMaterial;
+	var hash = document.location.hash.substr( 1 );
+	
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0x00ff00, overdraw: 0.5 } );
+	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
+	var textMaterial3 = new THREE.MeshBasicMaterial( { color:0xaa00aa, overdraw: 0.5 } );
+	var textMaterial4 = new THREE.MeshBasicMaterial( { color:0xffff00, overdraw: 0.5 } );
+
+	if(switchM == 0){
+		textMaterial = textMaterial4;
+		theText = theText4;
+
+
+
+	}
+	if(switchM == 1){
+		textMaterial = textMaterial1;
+		theText = theText1;
+
+	}
+	if(switchM == 2){
+		textMaterial = textMaterial2;
+		theText = theText2;
+
+	}
+	if(switchM == 0.1){
+		textMaterial = textMaterial3;
+		theText = theText3;
+		
+	}
+
+	
+	if ( hash.length !== 0 ) {
+		theText = hash;
+	}
+
+	var text3d = new THREE.TextGeometry( theText, {
+
+		size: 5,
+		height: 8,
+		curveSegments: 2,
+		font: "helvetiker"
+
+	});
+
+	text3d.computeBoundingBox();
+	var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+	
+	text = new THREE.Mesh( text3d, textMaterial );
+
+	text.position.x = centerOffset;
+	text.position.y = 20;
+	text.position.z = 0;
+
+	group = new THREE.Group();
+	group.add( text );
+	
+	sceneHUD.add( group );
+}
+
+
+
+function countBack() {
+    sceneCB = new THREE.Scene();
+    cameraCB = new THREE.OrthographicCamera(-30, 30, 30, -30, 1, 1000);
+    cameraCB.position.z = 20;
+    cameraCB.lookAt(new THREE.Vector3(0, 0, 0));
+
+	// Get text from hash
+
+	var theText, theText1 = "One", theText2 = "Two", theText3 = "Three", theText4 = "GO", theText5 = "";
+	var textMaterial;
+	var hash = document.location.hash.substr( 1 );
+	
+	var textMaterial1 = new THREE.MeshBasicMaterial( { color:0xff0000, overdraw: 0.5 } );
+	var textMaterial2 = new THREE.MeshBasicMaterial( { color:0xff9900, overdraw: 0.5 } );
+
+	textMaterial = textMaterial1;
+	theText = theText5;	
+	
+
+	
+	
+	if(temp <= T && T <= temp+750) {
+		textMaterial = textMaterial2;
+		theText = theText3;
+		if(countS == 0){
+			countS++
+			speaker.speak("en",theText );
+		}
+	}
+	else if(temp+750 < T && T <= temp+1500) {
+		textMaterial = textMaterial2;
+		theText = theText2;
+		if(countS == 1){
+			countS++
+			speaker.speak("en",theText );
+		}
+	}
+	else if(temp+1500 < T && T <= temp+2250) {
+		textMaterial = textMaterial2;
+		theText = theText1;
+		if(countS == 2){
+			countS++
+
+			speaker.speak("en",theText );
+		}
+	}
+	else if(temp+2250 < T && T <= temp+3000) {			
+		textMaterial = textMaterial1;
+		theText = theText4;
+		temp2 = T.getTime();
+	
+		if(countS == 3){
+			countS++;
+			ModeRandom();
+			speaker.speak("en",theText );
+			countS = 0;
+		}
+	} 
+
+
+	if ( hash.length !== 0 ) {
+		theText = hash;
+	}
+
+	var text3d = new THREE.TextGeometry( theText, {
+
+		size: 5,
+		height: 5,
+		curveSegments: 2,
+		font: "helvetiker"
+
+	});
+
+	text3d.computeBoundingBox();
+	var centerOffset = -0.5 * ( text3d.boundingBox.max.x - text3d.boundingBox.min.x );
+
+	
+	text = new THREE.Mesh( text3d, textMaterial );
+
+	text.position.x = centerOffset;
+	text.position.y = 10;
+	text.position.z = 0;
+
+	group = new THREE.Group();
+	group.add( text );
+	
+	sceneCB.add( group );
+	
+}
+
 
 
 function init() {
@@ -170,26 +349,22 @@ function init() {
 	raycaster = new THREE.Raycaster();
 	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
 
+	renderer.autoClear = false;
 }
 
 $("#turn").click(function () {
 	turn = !turn;
 	stop = !stop;
+	T = new Date();
+	temp = T.getTime();
 	init();
+
     if (turn){
         $("#turn").html ("Game Time!");
 	}
 	else{
         $("#turn").html ("Start");
 	}
-});
-
-$("#R-N").click(function () {
-    P_choose = !P_choose;
-    if (P_choose)
-        $("#R-N").html ("2-gram");
-    else
-        $("#R-N").html ("Random");
 });
 
 $("#clear").click(function () {
@@ -212,10 +387,10 @@ function P_Defence(){
 	C_BoxM = new THREE.Mesh (box_geom, box_matQ);
 	C_BoxM.position.set (-15,100,0);
 	C_BoxM.name = "CboxM";
-	scene.add (C_BoxM);
+	//scene.add (C_BoxM);
 
 	C_BoxH = new THREE.Mesh (box_geom, box_matQ);
-	C_BoxH.position.set (15,100,0);
+	C_BoxH.position.set (0,100,0);
 	C_BoxH.name = "CboxH";
 	scene.add (C_BoxH);
 	
@@ -291,9 +466,9 @@ function onDocumentMouseDown( event ) {
 	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
 	var intersects = raycaster.intersectObjects( scene.children );
 	if ( intersects.length > 0 ) {
-		if (intersects[0].object.name === "Rbox") {H_choose = 0;	whenChooseH();} 
-		else if (intersects[0].object.name === "Pbox") {H_choose = 5;	whenChooseH();}
-		else if (intersects[0].object.name === "DPbox") {H_choose = 10;	whenChooseH();}	
+		if (intersects[0].object.name === "Rbox") {H_choose = 0;	whenChooseH(); check = true; } 
+		else if (intersects[0].object.name === "Pbox") {H_choose = 5;	whenChooseH(); check = true; }
+		else if (intersects[0].object.name === "DPbox") {H_choose = 10;	whenChooseH(); check = true; }	
 	}
 	
 }
@@ -302,11 +477,11 @@ function ModeRandom(){
 	var TextureM, TextureH;
 	var x = Math.random(), y = Math.random();
 	
-	if( x <= 0.2 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/0.jpg' );  C_chooseM = 0; }
-	else if( x <= 0.4 && x > 0.2 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/5.jpg' ); C_chooseM = 5;}
-	else if( x <= 0.6 && x > 0.4 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/10.jpg' );  C_chooseM = 10;}
-	else if( x <= 0.8 && x > 0.6 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/15.jpg' ); C_chooseM = 15;	}
-	else if( x > 0.8 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/20.jpg' );  C_chooseM = 20;}
+	if( x <= 0.2 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/0.jpg' );  C_chooseM = 0; Stext = Stext1;}
+	else if( x <= 0.4 && x > 0.2 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/5.jpg' ); C_chooseM = 5; Stext = Stext2;}
+	else if( x <= 0.6 && x > 0.4 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/10.jpg' );  C_chooseM = 10; Stext = Stext3;}
+	else if( x <= 0.8 && x > 0.6 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/15.jpg' ); C_chooseM = 15;	Stext = Stext4;}
+	else if( x > 0.8 ){ TextureM = new THREE.ImageUtils.loadTexture( 'image/20.jpg' );  C_chooseM = 20; Stext = Stext5;}
 	
 	if( C_chooseM == 0 ){
 		TextureH = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_chooseH = 0;
@@ -335,10 +510,12 @@ function ModeRandom(){
 	
 	C_BoxM = new THREE.Mesh (box_geom, box_matM);
 	C_BoxM.position.set (-15,100,0);
-	scene.add (C_BoxM);
+	//speaker.speak("en",Stext );
+	//scene.add (C_BoxM);
 
+	
 	C_BoxH = new THREE.Mesh (box_geom, box_matH);
-	C_BoxH.position.set (15,100,0);
+	C_BoxH.position.set (0,100,0);
 	scene.add (C_BoxH);
 }
 
@@ -398,7 +575,7 @@ function ModeGram(){
 	var box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
 	C_Box = new THREE.Mesh (box_geom, box_mat);
 	C_Box.position.set (0,100,0);
-	scene.add (C_Box);
+	//scene.add (C_Box);
 	
 	if( Texture == TextureR )C_chooseH = 0;
 	else if( Texture == TextureP )C_chooseH = 5;
@@ -407,8 +584,46 @@ function ModeGram(){
 }
 
 
+function tooSlow() {
+		
+	if(T > temp+2250 && check == true){
+		
+		temp = temp+20000;
+		countBack();
+		if( (T.getTime()-temp2) > 750 ){
+			H_choose = 100;
+			check = false;
+			Info_Perform(0.1);
+			localStorage.setItem ("Defence_Miss", ++Defence_Miss);
+			var MisTemp = localStorage.getItem ("Defence_Miss");
+			if( MisTemp == 2){
+				localStorage.setItem ("Defence_Lose", ++Defence_Lose);
+				localStorage.setItem ("Defence_Miss", 0);
+				Defence_Miss = 0;
+			}
+		}
+		T = 0;
+		temp2 = 0;
+		stop = !stop;		
+	}
+	
+}
+
+
 function animate()
-{		
+{	
+	//count back
+	if(T <= temp+3000 && !stop){
+		T = new Date();
+		countBack();
+		console.log(T);
+	}
+	else if(T > temp+3000 && check == false){
+		T = new Date();
+	}
+	tooSlow();
+	
+		
 	
 	if ( H_choose == 0 ) {
 		gramHistory_H.push(0);
@@ -417,7 +632,7 @@ function animate()
 		//if( gramHistory_H.length >= 2 ) 
 		//ModeGram();
 		//else 
-		ModeRandom();
+	
 	
 		if( C_chooseM == 0 ){	
 			if( C_chooseH == 0 ){
@@ -468,7 +683,7 @@ function animate()
 		//if( gramHistory_H.length >= 2 ) 
 		//ModeGram();
 		//else 
-		ModeRandom();
+		//ModeRandom();
 	
 		if( C_chooseM == 5 ){	
 			if( C_chooseH == 0 ){
@@ -519,7 +734,7 @@ function animate()
 		//if( gramHistory_H.length >= 2 ) 
 		//ModeGram();
 		//else 
-		ModeRandom();
+		//ModeRandom();
 		
 		if( C_chooseM == 10 ){	
 			if( C_chooseH == 0 ){
@@ -589,19 +804,11 @@ function onWindowResize() {
 	renderer.setSize (ww,hh);
 }
 
-/*function animate2() {
-    if (turn) angle += 0.01;
-    mesh.rotation.y = angle;
-
-    $("#angle").val(angle.toFixed(2));
-
-    controls.update();
-    requestAnimationFrame(animate);
-    render();
-}*/
-
 function render() {
+	renderer.clear();
     renderer.render(scene, camera);
+	renderer.render(sceneHUD, cameraHUD);
+	renderer.render(sceneCB, cameraCB);
 }
 </script>
 </body>

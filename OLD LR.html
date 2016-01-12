@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+	body {
+		background-color: #fff;
+		color: #111;
+		margin: 0px;
+		overflow: hidden;
+		font-family: Monospace;
+		font-size: 20px;
+		position: absolute;
+	}
+	#container {
+		width:60vw;
+		height: 60vw;
+		float:left;
+		margin: 3px;
+	}
+	a {color: #00ffff}
+	strong {color:red}
+</style>
+</head>
+
+<body> 
+
+<h1 style="text-align:center"> Project: RPS game </h1>
+<hr>
+<div id="container">
+       <canvas id="cnvs"> </canvas>
+</div>
+<div style="float:left; margin-left: 10px; width:32vw;">Menu:
+    <button id="turn" style="width:100%">Start</button>
+	<br/>
+    <br/>
+	<button id="R-N" style="width:100%">Random</button>
+    <br/>
+	<p style="float:left; margin-left: 10px; width:32vw;">
+	Win:  	<input id="W" style="width:20%" type="text" value="None">
+	Lose:	<input id="L" style="width:20%" type="text" value="None"><br/>
+	Wins:	<input id="WvsL" style="width:20%" type="text" value="None"></p>
+	<br/>
+    <br/>
+	<button id="clear" style="width:100%">Reset record</button>
+</div>
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="js/r69/three.min.js"></script>
+<script src="js/OrbitControls.js"></script>
+
+<script>
+var time = 0;
+var turn = false, P_choose = false;
+var scene, renderer, camera, controls, raycaste;   
+var mouse = new THREE.Vector2();
+var left_ball, right_ball;
+var angle_l = 0, angle_r = 0;
+//var ChooseL = false, ChooseR = false, stop = true;
+var Win = 0, Lose = 0;
+var P_choose = 100, C_choose = 0;
+var theCanvasFrame;	
+var gramHistory = [], gramData = [];
+theInit();	
+init();
+animate();
+function clearlog()
+{
+	localStorage.setItem ("Win", 0);
+	localStorage.setItem ("Lose", 0);
+	Win = Lose = 0;
+	
+}
+function log()
+{
+	var winTemp, loseTemp, WINS;
+	winTemp = localStorage.getItem ("Win");
+	loseTemp = localStorage.getItem ("Lose");
+	var add = parseInt(winTemp) + parseInt(loseTemp);
+	WINS = (parseInt(winTemp)/add)*100;
+	$("#W").val(winTemp);
+	$("#L").val(loseTemp);
+	$("#WvsL").val(WINS+"%");
+}
+function theInit(){
+	for (var i = 0; i < 27; i++) gramData.push(0);
+}
+function init() {
+    var theCanvas = document.getElementById("cnvs");
+    theCanvasFrame = document.getElementById("container");	
+	
+	//clearlog();
+	
+	Win = localStorage.getItem ("Win");
+	Lose = localStorage.getItem ("Lose");
+	renderer = new THREE.WebGLRenderer({
+        canvas: theCanvas,
+        antialias: true
+    });
+    var ww = theCanvasFrame.clientWidth;
+    var hh = theCanvasFrame.clientHeight;
+    renderer.setSize(ww, hh);
+    renderer.setClearColor(0x888888);
+	//document.body.appendChild (renderer.domElement);
+    scene = new THREE.Scene();
+	
+	camera = new THREE.PerspectiveCamera (45, ww/hh, 1, 10000);
+	camera.position.x = 0;
+	camera.position.y = 60;
+	camera.position.z = 400;
+	camera.lookAt (new THREE.Vector3(0,0,0));
+	
+    var gridXZ = new THREE.GridHelper(100, 10);
+    gridXZ.setColors(new THREE.Color(0xff0000), new THREE.Color(0xffffff));
+    scene.add(gridXZ);
+	
+	light();
+	RPS();
+	
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+	
+	window.addEventListener ('resize', onWindowResize, false);	
+	raycaster = new THREE.Raycaster();
+	document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+}
+$("#turn").click(function () {
+	turn = !turn;
+	stop = !stop;
+	init();
+    if (turn){
+        $("#turn").html ("Game Time!");
+	}
+	else{
+        $("#turn").html ("Start");
+	}
+});
+$("#R-N").click(function () {
+    P_choose = !P_choose;
+    if (P_choose)
+        $("#R-N").html ("2-gram");
+    else
+        $("#R-N").html ("Random");
+});
+$("#clear").click(function () {
+   clearlog();
+});
+function RPS(){
+	var box_geom = new THREE.BoxGeometry (30,30,30);
+	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+	var box_matR = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureR});
+	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
+	var box_matP = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureP});
+	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
+	var box_matS = new THREE.MeshPhongMaterial ({color: 0xdd2211,map: TextureS});
+	var TextureQ = new THREE.ImageUtils.loadTexture( 'image/Q.jpg' );
+	var box_matQ = new THREE.MeshPhongMaterial ({color: 0xffffff,map: TextureQ});
+	C_Box = new THREE.Mesh (box_geom, box_matQ);
+	C_Box.position.set (0,100,0);
+	C_Box.name = "Cbox";
+	scene.add (C_Box);
+	
+	R_Box = new THREE.Mesh (box_geom, box_matR);
+	R_Box.position.set (-50,20,0);
+	R_Box.name = "Rbox";
+	scene.add (R_Box);
+	
+	P_Box = new THREE.Mesh (box_geom, box_matP);
+	P_Box.position.set (0,20,0);
+	P_Box.name = "Pbox";
+	scene.add (P_Box);
+	
+	S_Box = new THREE.Mesh (box_geom, box_matS);
+	S_Box.position.set (50,20,0);
+	S_Box.name = "Sbox";
+	scene.add (S_Box);
+}
+function whenChoose(){
+	var box_geom = new THREE.BoxGeometry (30,30,30);
+	var box_mat = new THREE.MeshPhongMaterial ({color: 0x555555});
+	
+	if( P_choose == 0 ){
+		P_Box.position.set (0,-50,0);
+		S_Box.position.set (50,-50,0);
+	}
+	else if( P_choose == 1 ){
+		R_Box.position.set (-50,-50,0);
+		S_Box.position.set (50,-50,0);
+	}
+	else if( P_choose == 2 ){
+		P_Box.position.set (0,-50,0);
+		R_Box.position.set (-50,-50,0);
+	}
+}
+function light(){
+	var pointLight = new THREE.PointLight (0xffffff);
+	pointLight.position.set (0,300,200);
+	scene.add (pointLight);
+	var ambientLight = new THREE.AmbientLight (0x111111);
+	scene.add(ambientLight);
+}
+function onDocumentMouseDown( event ) {
+	// PICKING DETAILS: 
+	// convert mouse.xy = [-1,1]^2 (NDC)
+	// unproject (mouse.xy, 1) to a point on the far plane (in world coordinate)
+	// set raycaster (origin, direction)
+	// find intersection objects, (closest first) 
+	// each record as
+	// [ { distance, point, face, faceIndex, object }, ... ]
+	event.preventDefault();
+	mouse.x = ( (event.clientX - event.target.offsetLeft) / theCanvasFrame.clientWidth ) * 2 - 1;
+	mouse.y = - ( (event.clientY - event.target.offsetTop) / theCanvasFrame.clientHeight ) * 2 + 1;
+	// find intersections
+	var vector = new THREE.Vector3( mouse.x, mouse.y, 1 ).unproject( camera );
+	raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
+	var intersects = raycaster.intersectObjects( scene.children );
+	if ( intersects.length > 0 ) {
+		if (intersects[0].object.name === "Rbox") {P_choose = 0;  whenChoose();}
+		else if (intersects[0].object.name === "Pbox") {P_choose = 1;  whenChoose();}
+		else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose();}
+	}
+	
+}
+function ModeRandom(){
+	var Texture;
+	var x = Math.random();
+	if( x <= 0.33 ){ Texture = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );  C_choose = 0;}
+	else if( x <= 0.66 && x > 0.33 ){ Texture = new THREE.ImageUtils.loadTexture( 'image/P.jpg' ); C_choose = 1;}
+	else if( x > 0.66 ){ Texture = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );  C_choose = 2;}
+	
+	var box_geom = new THREE.BoxGeometry (30,30,30);
+	var box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	C_Box = new THREE.Mesh (box_geom, box_mat);
+	C_Box.position.set (0,100,0);
+	scene.add (C_Box);
+}
+function gramCollect(){
+	
+	if(gramHistory.length > 2){
+		++gramData[gramHistory[0] * 9 + gramHistory[1] * 3 + gramHistory[2]];
+		console.log(gramHistory);
+		gramHistory.shift();
+		
+		console.log(gramData);
+	 }
+}
+function ModeGram(){
+	
+	var Texture;
+	var TextureR = new THREE.ImageUtils.loadTexture( 'image/R.jpg' );
+	var TextureP = new THREE.ImageUtils.loadTexture( 'image/P.jpg' );
+	var TextureS = new THREE.ImageUtils.loadTexture( 'image/S.jpg' );
+	if( gramHistory[0] == 0 ){
+		if( gramHistory[1] == 0 ){
+			gramData[0] > gramData[1] ? ( gramData[0] > gramData[2] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+			//console.log("00");
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[3] > gramData[4] ? ( gramData[3] > gramData[5] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[6] > gramData[7] ? ( gramData[6] > gramData[8] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+	}
+	else if( gramHistory[0] == 1 ){
+		if( gramHistory[1] == 0 ){
+			gramData[9] > gramData[10] ? ( gramData[9] > gramData[11] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[12] > gramData[13] ? ( gramData[12] > gramData[14] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[15] > gramData[16] ? ( gramData[15] > gramData[17] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+	}
+	else if( gramHistory[0] == 2 ){
+		if( gramHistory[1] == 0 ){
+			gramData[18] > gramData[19] ? ( gramData[18] > gramData[20] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+		else if( gramHistory[1] == 1 ){
+			gramData[21] > gramData[22] ? ( gramData[21] > gramData[23] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+		else if( gramHistory[1] == 2 ){
+			gramData[24] > gramData[25] ? ( gramData[24] > gramData[26] ? Texture = TextureP : Texture = TextureR ) : Texture = TextureS;
+		}
+	}
+	
+	var box_geom = new THREE.BoxGeometry (30,30,30);
+	var box_mat = new THREE.MeshPhongMaterial ({color: 0xffffff,map: Texture});
+	C_Box = new THREE.Mesh (box_geom, box_mat);
+	C_Box.position.set (0,100,0);
+	scene.add (C_Box);
+	
+	if( Texture == TextureR )C_choose = 0;
+	else if( Texture == TextureP )C_choose = 1;
+	else if( Texture == TextureS )C_choose = 2;
+}
+function animate()
+{
+	
+	/*if(time < 3 && !stop){
+		time += 0.05;
+		angle_l += 0.2; angle_r -= 0.2;
+		left_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
+		left_ball.rotation.y = angle_l;
+		right_ball.translateOnAxis (new THREE.Vector3(0,0,1), 20)	
+		right_ball.rotation.y = angle_r;
+	}
+	else if(time >= 3){
+		left_ball.position.set (-50,10,0);
+		right_ball.position.set (50,10,0);
+		angle_l = 0.0;
+		angle_r = 0.0;
+		time = 0;
+		stop = !stop;
+		
+		if( P_choose && (parseInt(Win) + parseInt(Lose)) > 20 )
+			ModeGram();
+		else
+			ModeRandom();
+	}
+	*/
+	
+	if ( P_choose == 0 ) {
+		//angle_l += 0.1; 
+		//if (angle_l > Math.PI) {angle_l = Math.PI;}
+			if( gramHistory.length > 2 ) 
+			ModeGram();
+			else ModeRandom();
+			gramHistory.push(0);
+			gramCollect();
+			if( C_choose == 0 ){
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 2 ){
+				localStorage.setItem ("Win", ++Win);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 1 ){
+				localStorage.setItem ("Lose", ++Lose);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}			
+	}
+	else if ( P_choose == 1 ) {
+		//angle_l += 0.1; 
+		//if (angle_l > Math.PI) {angle_l = Math.PI;}
+			if( gramHistory.length > 2 ) 
+			ModeGram();
+			else ModeRandom();
+			gramHistory.push(1);
+			gramCollect();
+			if( C_choose == 1 ){
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 0 ){
+				localStorage.setItem ("Win", ++Win);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 2 ){
+				localStorage.setItem ("Lose", ++Lose);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}			
+	}	
+	else if ( P_choose == 2 ) {
+		//angle_l += 0.1; 
+		//if (angle_l > Math.PI) {angle_l = Math.PI;}
+			if( gramHistory.length > 2 ) 
+			ModeGram();
+			else ModeRandom();
+			gramHistory.push(2);
+			gramCollect();
+			if( C_choose == 2 ){
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 1 ){
+				localStorage.setItem ("Win", ++Win);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}
+			else if( C_choose == 0 ){
+				localStorage.setItem ("Lose", ++Lose);
+				//init();
+				turn = !turn;
+				$("#turn").html ("Start");
+			}			
+	}
+	
+	P_choose = C_choose = 100;
+	//left_ball.rotation.y = angle_l;
+	//right_ball.rotation.y = angle_r;
+	requestAnimationFrame ( animate );  
+	update();
+	render(); 
+}
+function update()
+{
+	log();
+	controls.update();
+}
+function onWindowResize() {
+    var ww = theCanvasFrame.clientWidth;
+    var hh = theCanvasFrame.clientHeight;
+    camera.aspect = ww/hh;
+	camera.updateProjectionMatrix();
+	renderer.setSize (ww,hh);
+}
+/*function animate2() {
+    if (turn) angle += 0.01;
+    mesh.rotation.y = angle;
+    $("#angle").val(angle.toFixed(2));
+    controls.update();
+    requestAnimationFrame(animate);
+    render();
+}*/
+function render() {
+    renderer.render(scene, camera);
+}
+</script>
+</body>
+
+</html>
