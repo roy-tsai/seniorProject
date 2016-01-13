@@ -349,7 +349,7 @@ function countBack() {
 
 	
 	
-	if(temp <= T && T <= temp+750) {
+	if(temp <= T && T <= temp+1000) {
 		textMaterial = textMaterial2;
 		theText = theText3;
 		if(countS == 0){
@@ -357,7 +357,7 @@ function countBack() {
 			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+750 < T && T <= temp+1500) {
+	else if(temp+1000 < T && T <= temp+2000) {
 		textMaterial = textMaterial2;
 		theText = theText2;
 		if(countS == 1){
@@ -365,7 +365,7 @@ function countBack() {
 			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+1500 < T && T <= temp+2250) {
+	else if(temp+2000 < T && T <= temp+3000) {
 		textMaterial = textMaterial2;
 		theText = theText1;
 		if(countS == 2){
@@ -373,7 +373,7 @@ function countBack() {
 			speaker.speak("en",theText );
 		}
 	}
-	else if(temp+2250 < T && T <= temp+3000) {
+	else if(temp+3000 < T && T <= temp+4000) {
 		textMaterial = textMaterial1;
 		theText = theText4;
 		temp2 = T.getTime();
@@ -913,11 +913,11 @@ function Mode3Gram(){
 
 function tooSlow() {
 		
-	if(T > temp+2250 && check == true){
+	if(T > temp+3000 && check == true){
 		
 		temp = temp+20000;
 		countBack();
-		if( (T.getTime()-temp2) > 750 ){
+		if( (T.getTime()-temp2) > 1000 ){
 			P_choose = 100;
 			check = false;
 			Info_Perform(0.1);
@@ -947,12 +947,12 @@ function animate()
 		tempI = Idle.getTime();
 	}
 	//count back
-	if(T <= temp+3000 && !stop){
+	if(T <= temp+4000 && !stop){
 		T = new Date();
 		countBack();
 		
 	}
-	else if(T > temp+3000 && check == false){
+	else if(T > temp+4000 && check == false){
 		T = new Date();
 	}
 	tooSlow();
