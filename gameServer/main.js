@@ -1,6 +1,6 @@
 var localStorage = require('localStorage');
 
-var ip   = "192.168.0.187",
+var ip   = "192.168.0.103",
     port = 1337,
     http = require('http'),
     url = require("url"),

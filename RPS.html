@@ -318,7 +318,7 @@ function Info_Perform(switchM) {
 	if( count == 5 ){
 		count = 0;
 		
-		$.get( "http://192.168.0.187:1337/api?argv="+ WINS.toFixed(2), function( data ) {
+		$.get( "http://192.168.0.103:1337/api?argv="+ WINS.toFixed(2), function( data ) {
 			if(data && data.output){
 				$('#result').text(data.output);
 				console.log (data.output);
@@ -380,6 +380,7 @@ function countBack() {
 		if(countS == 3){
 			countS++
 			speaker.speak("en",theText );
+			//randomChoose();
 			countS = 0;
 		}
 	} 
@@ -640,6 +641,13 @@ function onDocumentMouseDown( event ) {
 			else if (intersects[0].object.name === "Sbox") {P_choose = 2;  whenChoose(); check = true;}
 		}
 	}
+}
+
+function randomChoose(){
+	var x = Math.random();
+	if( x <= 0.33 ){ P_choose = 0; whenChoose(); check = true;}
+	else if( x <= 0.66 && x > 0.33 ){ P_choose = 1;  whenChoose(); check = true;}
+	else if( x > 0.66 ){ P_choose = 2;  whenChoose(); check = true;}	
 }
 
 function ModeRandom(){
@@ -956,8 +964,9 @@ function animate()
 		T = new Date();
 	}
 	tooSlow();
+
 	
-	
+
 	if ( P_choose == 0 ) {
 	waitNext = true;  
 			check = false; 
